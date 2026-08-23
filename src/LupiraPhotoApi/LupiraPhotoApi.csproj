@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>LupiraPhotoApi</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    Emit the OpenAPI document at build time (no running server / DB) so the JSON spec stays in
+    lockstep with the Map* endpoints. `dotnet build` writes `openapi/LupiraPhotoApi.json` at the
+    repo root; Marten is lazy and hosted services never start under doc-gen, so no infra is required.
+  -->
+  <PropertyGroup>
+    <OpenApiGenerateDocuments>true</OpenApiGenerateDocuments>
+    <OpenApiGenerateDocumentsOnBuild>true</OpenApiGenerateDocumentsOnBuild>
+    <OpenApiDocumentsDirectory>$(MSBuildThisFileDirectory)..\..\openapi</OpenApiDocumentsDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="LupiraPhotoApi.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The bounded context (Domain + Application + Data). The host is a thin transport/composition
+         layer over it plus the infrastructure adapters (S3 object store, thumbnailers, geotag clients). -->
+    <ProjectReference Include="..\LupiraPhotoApi.Core\LupiraPhotoApi.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="4.0.102.3" />
+    <!-- Apache-2.0 imaging with AutoOrient + WebP encode + HEIC decode (ImageSharp v4 gates Release builds on a license). -->
+    <PackageReference Include="Magick.NET-Q8-x64" Version="14.16.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.9">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.4.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.16.5" />
+  </ItemGroup>
+
+</Project>
