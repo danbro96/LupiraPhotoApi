@@ -1,4 +1,4 @@
-using LupiraPhotoApi.Core.Application;
+using LupiraPhotoApi.Core.Application.Results;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace LupiraPhotoApi.Http;
