@@ -6,7 +6,7 @@ using LupiraPhotoApi.Core.Storage;
 using Marten;
 using Microsoft.Extensions.Options;
 
-namespace LupiraPhotoApi.Background;
+namespace LupiraPhotoApi.Workers;
 
 /// <summary>The processing loop: claims Uploaded assets (plus expired-lease Processing ones — crash
 /// recovery) and runs the thumbnail + geotag pipeline. Single replica at family scale; the lease is

@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 using LupiraPhotoApi.Core.Application;
 using LupiraPhotoApi.Core.Application.Processing;
 using LupiraPhotoApi.Auth;
-using LupiraPhotoApi.Background;
+using LupiraPhotoApi.Workers;
 using LupiraPhotoApi.Clients;
 using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Endpoints;
