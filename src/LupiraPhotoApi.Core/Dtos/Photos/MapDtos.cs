@@ -1,6 +1,6 @@
-using LupiraPhotoApi.Domain;
+using LupiraPhotoApi.Core.Domain;
 
-namespace LupiraPhotoApi.Dtos.Photos;
+namespace LupiraPhotoApi.Core.Dtos.Photos;
 
 /// <summary>GeoJSON-shaped map payload — feeds a MapLibre GeoJSON source directly.</summary>
 public sealed class PhotoMapResponse

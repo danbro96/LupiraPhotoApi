@@ -1,5 +1,5 @@
 using LupiraPhotoApi.Auth;
-using LupiraPhotoApi.Dtos.Me;
+using LupiraPhotoApi.Core.Dtos.Me;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace LupiraPhotoApi.Handlers;

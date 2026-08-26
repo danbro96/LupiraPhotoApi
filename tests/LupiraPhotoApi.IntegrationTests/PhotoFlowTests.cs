@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
-using LupiraPhotoApi.Domain;
-using LupiraPhotoApi.Dtos.Photos;
+using LupiraPhotoApi.Core.Domain;
+using LupiraPhotoApi.Core.Dtos.Photos;
 using Xunit;
 
 namespace LupiraPhotoApi.IntegrationTests;
@@ -82,7 +82,7 @@ public class PhotoFlowTests(PhotoApiTestFactory factory) : IntegrationTest(facto
     [Fact]
     public async Task NoGps_FallsBackToLocationHistory()
     {
-        Factory.History.Hit = new LupiraPhotoApi.Application.Processing.LocationHistoryHit
+        Factory.History.Hit = new LupiraPhotoApi.Core.Application.Processing.LocationHistoryHit
         {
             Latitude = 56.05,
             Longitude = 14.15,

@@ -1,5 +1,5 @@
 using ImageMagick;
-using LupiraPhotoApi.Application.Processing;
+using LupiraPhotoApi.Core.Application.Processing;
 
 namespace LupiraPhotoApi.Media;
 

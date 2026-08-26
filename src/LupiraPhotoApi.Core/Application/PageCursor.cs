@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace LupiraPhotoApi.Application;
+namespace LupiraPhotoApi.Core.Application;
 
 /// <summary>Opaque keyset cursor over (TakenAt DESC, Id DESC) — base64 of <c>{ticks}:{guid}</c>.</summary>
 internal static class PageCursor

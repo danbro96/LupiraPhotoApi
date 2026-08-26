@@ -1,9 +1,9 @@
-using LupiraPhotoApi.Domain;
-using LupiraPhotoApi.Domain.Identity;
+using LupiraPhotoApi.Core.Domain;
+using LupiraPhotoApi.Core.Domain.Identity;
 using Marten;
 using Weasel.Core;
 
-namespace LupiraPhotoApi.Data;
+namespace LupiraPhotoApi.Core.Data;
 
 /// <summary>Configures the Marten store for the Photo API in the <c>photo</c> schema: plain documents only
 /// (identity + photo assets). Bytes live in the object store, never in Postgres. Enums serialize as strings.

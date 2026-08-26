@@ -1,4 +1,4 @@
-namespace LupiraPhotoApi.Application;
+namespace LupiraPhotoApi.Core.Application;
 
 /// <summary>Bound from the <c>Photos</c> section.</summary>
 public sealed class PhotoOptions

@@ -1,4 +1,4 @@
-namespace LupiraPhotoApi.Application.Processing;
+namespace LupiraPhotoApi.Core.Application.Processing;
 
 public sealed class ThumbnailResult
 {

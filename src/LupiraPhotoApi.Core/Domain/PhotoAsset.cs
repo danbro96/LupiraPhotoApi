@@ -1,4 +1,4 @@
-namespace LupiraPhotoApi.Domain;
+namespace LupiraPhotoApi.Core.Domain;
 
 /// <summary>
 /// One camera-roll asset (photo or video). The identity is deterministic over

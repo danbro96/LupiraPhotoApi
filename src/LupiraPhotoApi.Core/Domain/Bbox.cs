@@ -1,4 +1,4 @@
-namespace LupiraPhotoApi.Domain;
+namespace LupiraPhotoApi.Core.Domain;
 
 /// <summary>Viewport bounding box, wire format <c>minLon,minLat,maxLon,maxLat</c> (the MapLibre bounds order).</summary>
 public readonly record struct Bbox(double MinLon, double MinLat, double MaxLon, double MaxLat)

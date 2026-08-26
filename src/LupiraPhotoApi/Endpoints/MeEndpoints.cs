@@ -1,4 +1,4 @@
-using LupiraPhotoApi.Dtos.Me;
+using LupiraPhotoApi.Core.Dtos.Me;
 using LupiraPhotoApi.Handlers;
 
 namespace LupiraPhotoApi.Endpoints;

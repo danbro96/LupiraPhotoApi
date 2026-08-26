@@ -1,6 +1,6 @@
-using LupiraPhotoApi.Application;
-using LupiraPhotoApi.Application.Processing;
-using LupiraPhotoApi.Data;
+using LupiraPhotoApi.Core.Application;
+using LupiraPhotoApi.Core.Application.Processing;
+using LupiraPhotoApi.Core.Data;
 using Marten;
 using Microsoft.Extensions.Configuration;
 

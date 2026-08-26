@@ -1,6 +1,6 @@
-using LupiraPhotoApi.Domain;
+using LupiraPhotoApi.Core.Domain;
 
-namespace LupiraPhotoApi.Dtos.Photos;
+namespace LupiraPhotoApi.Core.Dtos.Photos;
 
 public sealed class PhotoListItemDto
 {

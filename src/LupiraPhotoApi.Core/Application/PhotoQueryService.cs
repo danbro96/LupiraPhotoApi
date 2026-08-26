@@ -1,9 +1,9 @@
-using LupiraPhotoApi.Domain;
-using LupiraPhotoApi.Dtos.Photos;
+using LupiraPhotoApi.Core.Domain;
+using LupiraPhotoApi.Core.Dtos.Photos;
 using Marten;
 using Marten.Linq.MatchesSql;
 
-namespace LupiraPhotoApi.Application;
+namespace LupiraPhotoApi.Core.Application;
 
 public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner presigner)
 {

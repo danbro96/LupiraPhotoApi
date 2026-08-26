@@ -1,4 +1,4 @@
-namespace LupiraPhotoApi.Application.Processing;
+namespace LupiraPhotoApi.Core.Application.Processing;
 
 /// <summary>A place match from the owner's location history (~100 m quantized coordinates).</summary>
 public sealed class LocationHistoryHit

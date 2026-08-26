@@ -1,4 +1,4 @@
-namespace LupiraPhotoApi.Dtos.Me;
+namespace LupiraPhotoApi.Core.Dtos.Me;
 
 /// <summary>The resolved local identity of the caller.</summary>
 public sealed class MeDto

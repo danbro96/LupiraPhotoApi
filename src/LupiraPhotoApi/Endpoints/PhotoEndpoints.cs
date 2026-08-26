@@ -1,5 +1,5 @@
-using LupiraPhotoApi.Domain;
-using LupiraPhotoApi.Dtos.Photos;
+using LupiraPhotoApi.Core.Domain;
+using LupiraPhotoApi.Core.Dtos.Photos;
 using LupiraPhotoApi.Handlers;
 
 namespace LupiraPhotoApi.Endpoints;

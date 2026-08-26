@@ -1,8 +1,8 @@
-using LupiraPhotoApi.Domain;
-using LupiraPhotoApi.Storage;
+using LupiraPhotoApi.Core.Domain;
+using LupiraPhotoApi.Core.Storage;
 using Marten;
 
-namespace LupiraPhotoApi.Application;
+namespace LupiraPhotoApi.Core.Application;
 
 public sealed class PhotoDeleteService(IDocumentSession session, IObjectStore store)
 {

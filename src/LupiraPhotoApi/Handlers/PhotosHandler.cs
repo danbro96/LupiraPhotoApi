@@ -1,7 +1,7 @@
-using LupiraPhotoApi.Application;
+using LupiraPhotoApi.Core.Application;
 using LupiraPhotoApi.Auth;
-using LupiraPhotoApi.Domain;
-using LupiraPhotoApi.Dtos.Photos;
+using LupiraPhotoApi.Core.Domain;
+using LupiraPhotoApi.Core.Dtos.Photos;
 using LupiraPhotoApi.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 

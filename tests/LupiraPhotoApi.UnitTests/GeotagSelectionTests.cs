@@ -1,6 +1,6 @@
-using LupiraPhotoApi.Application.Processing;
-using LupiraPhotoApi.Domain;
-using LupiraPhotoApi.Storage;
+using LupiraPhotoApi.Core.Application.Processing;
+using LupiraPhotoApi.Core.Domain;
+using LupiraPhotoApi.Core.Storage;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 

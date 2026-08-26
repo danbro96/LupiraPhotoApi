@@ -1,4 +1,4 @@
-using LupiraPhotoApi.Application;
+using LupiraPhotoApi.Core.Application;
 using Xunit;
 
 namespace LupiraPhotoApi.UnitTests;

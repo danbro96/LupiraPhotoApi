@@ -1,4 +1,4 @@
-using LupiraPhotoApi.Storage;
+using LupiraPhotoApi.Core.Storage;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace LupiraPhotoApi.Health;

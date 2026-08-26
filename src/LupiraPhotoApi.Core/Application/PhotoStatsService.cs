@@ -1,7 +1,7 @@
-using LupiraPhotoApi.Domain;
+using LupiraPhotoApi.Core.Domain;
 using Marten;
 
-namespace LupiraPhotoApi.Application;
+namespace LupiraPhotoApi.Core.Application;
 
 public sealed class PhotoStats
 {

@@ -1,4 +1,4 @@
-namespace LupiraPhotoApi.Storage;
+namespace LupiraPhotoApi.Core.Storage;
 
 public sealed class ObjectStat
 {

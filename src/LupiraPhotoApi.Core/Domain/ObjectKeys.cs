@@ -1,4 +1,4 @@
-namespace LupiraPhotoApi.Domain;
+namespace LupiraPhotoApi.Core.Domain;
 
 /// <summary>Object-key scheme and the content-type whitelist. Pure — the key is derived once at declare
 /// time and stored on the document; never recomputed against a moved target.</summary>

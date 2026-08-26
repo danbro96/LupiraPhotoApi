@@ -1,4 +1,4 @@
-namespace LupiraPhotoApi.Domain;
+namespace LupiraPhotoApi.Core.Domain;
 
 /// <summary>The asset status machine. All transitions mutate the document in place and are the only
 /// legal way to move between statuses — endpoints and the worker never set <see cref="PhotoAsset.Status"/>

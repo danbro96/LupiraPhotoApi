@@ -1,4 +1,4 @@
-namespace LupiraPhotoApi.Application.Processing;
+namespace LupiraPhotoApi.Core.Application.Processing;
 
 /// <summary>Coordinate → short place label (GeoApi). Null on no result or upstream failure — geotag
 /// lookups are soft; they never fail an asset.</summary>

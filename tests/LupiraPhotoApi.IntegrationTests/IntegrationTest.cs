@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
 using ImageMagick;
-using LupiraPhotoApi.Domain;
-using LupiraPhotoApi.Dtos.Photos;
+using LupiraPhotoApi.Core.Domain;
+using LupiraPhotoApi.Core.Dtos.Photos;
 using Xunit;
 
 namespace LupiraPhotoApi.IntegrationTests;

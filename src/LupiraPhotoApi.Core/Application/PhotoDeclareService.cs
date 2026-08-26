@@ -1,10 +1,10 @@
-using LupiraPhotoApi.Domain;
-using LupiraPhotoApi.Dtos.Photos;
-using LupiraPhotoApi.Storage;
+using LupiraPhotoApi.Core.Domain;
+using LupiraPhotoApi.Core.Dtos.Photos;
+using LupiraPhotoApi.Core.Storage;
 using Marten;
 using Microsoft.Extensions.Options;
 
-namespace LupiraPhotoApi.Application;
+namespace LupiraPhotoApi.Core.Application;
 
 public sealed class PhotoDeclareService(IDocumentSession session, IObjectStore store, IOptions<PhotoOptions> options)
 {

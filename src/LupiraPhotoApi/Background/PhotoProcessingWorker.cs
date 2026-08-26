@@ -1,8 +1,8 @@
-using LupiraPhotoApi.Application;
-using LupiraPhotoApi.Application.Processing;
-using LupiraPhotoApi.Domain;
-using LupiraPhotoApi.Domain.Identity;
-using LupiraPhotoApi.Storage;
+using LupiraPhotoApi.Core.Application;
+using LupiraPhotoApi.Core.Application.Processing;
+using LupiraPhotoApi.Core.Domain;
+using LupiraPhotoApi.Core.Domain.Identity;
+using LupiraPhotoApi.Core.Storage;
 using Marten;
 using Microsoft.Extensions.Options;
 

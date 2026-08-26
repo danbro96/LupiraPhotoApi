@@ -1,6 +1,6 @@
 using System.Security.Claims;
-using LupiraPhotoApi.Application;
-using LupiraPhotoApi.Domain.Identity;
+using LupiraPhotoApi.Core.Application;
+using LupiraPhotoApi.Core.Domain.Identity;
 
 namespace LupiraPhotoApi.Auth;
 

@@ -1,8 +1,8 @@
-using LupiraPhotoApi.Domain;
-using LupiraPhotoApi.Storage;
+using LupiraPhotoApi.Core.Domain;
+using LupiraPhotoApi.Core.Storage;
 using Microsoft.Extensions.Logging;
 
-namespace LupiraPhotoApi.Application.Processing;
+namespace LupiraPhotoApi.Core.Application.Processing;
 
 /// <summary>The per-asset pipeline: original → thumbnail → geotag. Mutates the asset in place; the
 /// worker owns claiming, persistence, and retry bookkeeping. Thumbnail failure throws (retryable);

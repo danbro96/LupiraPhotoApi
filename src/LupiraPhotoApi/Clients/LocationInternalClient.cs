@@ -1,5 +1,5 @@
 using System.Text.Json;
-using LupiraPhotoApi.Application.Processing;
+using LupiraPhotoApi.Core.Application.Processing;
 using Microsoft.Extensions.Options;
 
 namespace LupiraPhotoApi.Clients;

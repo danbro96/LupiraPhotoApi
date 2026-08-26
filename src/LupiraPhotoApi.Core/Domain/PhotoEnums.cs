@@ -1,4 +1,4 @@
-namespace LupiraPhotoApi.Domain;
+namespace LupiraPhotoApi.Core.Domain;
 
 public enum AssetKind
 {

@@ -1,4 +1,4 @@
-using LupiraPhotoApi.Application.Processing;
+using LupiraPhotoApi.Core.Application.Processing;
 using Marten;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;

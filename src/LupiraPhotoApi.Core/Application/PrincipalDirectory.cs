@@ -1,8 +1,8 @@
-using LupiraPhotoApi.Domain.Identity;
+using LupiraPhotoApi.Core.Domain.Identity;
 using Marten;
 using Npgsql;
 
-namespace LupiraPhotoApi.Application;
+namespace LupiraPhotoApi.Core.Application;
 
 /// <summary>
 /// Resolves an authenticated principal (OIDC <c>sub</c> + email) to a local <see cref="Principal"/>,

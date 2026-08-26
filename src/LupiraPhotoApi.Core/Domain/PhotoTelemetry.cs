@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace LupiraPhotoApi.Domain;
+namespace LupiraPhotoApi.Core.Domain;
 
 /// <summary>Domain-specific tracing source, registered with OpenTelemetry in Program.cs.</summary>
 public static class PhotoTelemetry

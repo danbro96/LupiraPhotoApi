@@ -1,7 +1,7 @@
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
-using LupiraPhotoApi.Storage;
+using LupiraPhotoApi.Core.Storage;
 using Microsoft.Extensions.Options;
 
 namespace LupiraPhotoApi.Storage;

@@ -1,6 +1,6 @@
-using LupiraPhotoApi.Domain;
+using LupiraPhotoApi.Core.Domain;
 
-namespace LupiraPhotoApi.Dtos.Photos;
+namespace LupiraPhotoApi.Core.Dtos.Photos;
 
 /// <summary>Client-side MediaStore metadata for one asset. (DeviceId, MediaStoreId) under the caller is
 /// the idempotency key — retrying a declare returns the same asset.</summary>
