@@ -26,7 +26,8 @@ public class GeotagSelectionTests
         string? reverseLabel = null,
         LocationHistoryHit? historyHit = null,
         FakeObjectStore? store = null) =>
-        new(store ?? new FakeObjectStore(),
+        new(
+            store ?? new FakeObjectStore(),
             new FakeThumbnailer(),
             new FakeThumbnailer(),
             new FakeGeocoder(reverseLabel),

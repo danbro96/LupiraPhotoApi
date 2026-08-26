@@ -21,11 +21,16 @@ public sealed class FfmpegVideoThumbnailer : IVideoThumbnailer
                 RedirectStandardOutput = true,
             };
             psi.ArgumentList.Add("-y");
-            psi.ArgumentList.Add("-ss"); psi.ArgumentList.Add("1");
-            psi.ArgumentList.Add("-i"); psi.ArgumentList.Add(sourcePath);
-            psi.ArgumentList.Add("-frames:v"); psi.ArgumentList.Add("1");
-            psi.ArgumentList.Add("-vf"); psi.ArgumentList.Add("scale='min(512,iw)':-2");
-            psi.ArgumentList.Add("-f"); psi.ArgumentList.Add("webp");
+            psi.ArgumentList.Add("-ss");
+            psi.ArgumentList.Add("1");
+            psi.ArgumentList.Add("-i");
+            psi.ArgumentList.Add(sourcePath);
+            psi.ArgumentList.Add("-frames:v");
+            psi.ArgumentList.Add("1");
+            psi.ArgumentList.Add("-vf");
+            psi.ArgumentList.Add("scale='min(512,iw)':-2");
+            psi.ArgumentList.Add("-f");
+            psi.ArgumentList.Add("webp");
             psi.ArgumentList.Add(outputPath);
 
             using var process = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start ffmpeg.");
@@ -52,7 +57,13 @@ public sealed class FfmpegVideoThumbnailer : IVideoThumbnailer
         }
         finally
         {
-            try { File.Delete(outputPath); } catch (IOException) { }
+            try
+            {
+                File.Delete(outputPath);
+            }
+            catch (IOException)
+            {
+            }
         }
     }
 

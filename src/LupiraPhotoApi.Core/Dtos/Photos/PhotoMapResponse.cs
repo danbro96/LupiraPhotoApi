@@ -4,5 +4,6 @@ namespace LupiraPhotoApi.Core.Dtos.Photos;
 public sealed class PhotoMapResponse
 {
     public string Type => "FeatureCollection";
+
     public required List<PhotoMapFeatureDto> Features { get; set; }
 }

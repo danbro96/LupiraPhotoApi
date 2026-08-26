@@ -53,8 +53,11 @@ public sealed class LocationInternalClient(
     private sealed class PlaceAtResponse
     {
         public string? Label { get; set; }
+
         public double? Lat { get; set; }
+
         public double? Lon { get; set; }
+
         public string? Source { get; set; }
     }
 }

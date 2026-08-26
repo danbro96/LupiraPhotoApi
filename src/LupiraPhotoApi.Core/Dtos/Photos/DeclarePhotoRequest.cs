@@ -5,14 +5,24 @@ namespace LupiraPhotoApi.Core.Dtos.Photos;
 public sealed class DeclarePhotoRequest
 {
     public required string DeviceId { get; set; }
+
     public required string MediaStoreId { get; set; }
+
     public required string ContentType { get; set; }
+
     public required long SizeBytes { get; set; }
+
     public required DateTimeOffset TakenAt { get; set; }
+
     public double? Latitude { get; set; }
+
     public double? Longitude { get; set; }
+
     public int? Width { get; set; }
+
     public int? Height { get; set; }
+
     public double? DurationSeconds { get; set; }
+
     public string? Sha256 { get; set; }
 }

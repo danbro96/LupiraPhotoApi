@@ -4,6 +4,8 @@ namespace LupiraPhotoApi.Core.Application.Processing;
 public sealed class LocationHistoryHit
 {
     public required double Latitude { get; set; }
+
     public required double Longitude { get; set; }
+
     public string? Label { get; set; }
 }

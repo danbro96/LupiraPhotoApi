@@ -21,8 +21,11 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
         if (from is { } f) query = query.Where(a => a.TakenAt >= f);
         if (to is { } t) query = query.Where(a => a.TakenAt <= t);
         if (bbox is { } b)
+        {
             query = query.Where(a => a.Latitude >= b.MinLat && a.Latitude <= b.MaxLat
                                   && a.Longitude >= b.MinLon && a.Longitude <= b.MaxLon);
+        }
+
         if (kind is { } k) query = query.Where(a => a.Kind == k);
         if (status is { } s) query = query.Where(a => a.Status == s);
 
@@ -65,6 +68,7 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
         var assets = await query.OrderByDescending(a => a.TakenAt).Take(MapLimit).ToListAsync(ct);
         var features = new List<PhotoMapFeatureDto>(assets.Count);
         foreach (var asset in assets)
+        {
             features.Add(new PhotoMapFeatureDto
             {
                 Geometry = new PhotoMapPointDto { Coordinates = [asset.Longitude!.Value, asset.Latitude!.Value] },
@@ -77,6 +81,7 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
                     ThumbUrl = await presigner.ThumbUrlAsync(asset, ct),
                 },
             });
+        }
 
         return OpResult<PhotoMapResponse>.Ok(new PhotoMapResponse { Features = features });
     }

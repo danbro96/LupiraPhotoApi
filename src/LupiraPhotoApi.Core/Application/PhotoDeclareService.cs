@@ -53,12 +53,14 @@ public sealed class PhotoDeclareService(IDocumentSession session, IObjectStore s
 
         // Beyond Declared the bytes are already in — return status only so the client skips the transfer.
         if (asset.Status != AssetStatus.Declared)
+        {
             return OpResult<DeclaredPhotoResponse>.Ok(new DeclaredPhotoResponse
             {
                 AssetId = asset.Id,
                 Status = asset.Status,
                 RequiredHeaders = [],
             });
+        }
 
         var expiry = TimeSpan.FromMinutes(_opts.PresignPutExpiryMinutes);
         var url = await store.PresignPutAsync(asset.OriginalKey, asset.ContentType, expiry, ct);

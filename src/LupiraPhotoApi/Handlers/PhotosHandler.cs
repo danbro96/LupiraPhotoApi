@@ -46,6 +46,7 @@ public sealed class PhotosHandler(
                 return Problems.BadRequest("bbox must be minLon,minLat,maxLon,maxLat.");
             parsed = b;
         }
+
         var u = await user.GetAsync(ct);
         return OpResultMap.OkProblem(await queryService.ListAsync(u.Id, from, to, parsed, kind, status, limit, cursor, ct));
     }

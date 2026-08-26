@@ -27,7 +27,8 @@ public static class ObjectKeys
             (extension, kind) = entry;
             return true;
         }
-        extension = "";
+
+        extension = string.Empty;
         kind = default;
         return false;
     }

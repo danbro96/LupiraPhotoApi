@@ -90,7 +90,8 @@ public sealed class S3ObjectStore : IObjectStore, IDisposable
     }
 
     public Task PutAsync(string key, Stream content, long length, string contentType, CancellationToken ct = default) =>
-        _ops.PutObjectAsync(new PutObjectRequest
+        _ops.PutObjectAsync(
+            new PutObjectRequest
         {
             BucketName = _bucket,
             Key = key,

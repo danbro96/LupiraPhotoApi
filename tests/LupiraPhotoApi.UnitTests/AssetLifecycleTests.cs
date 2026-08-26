@@ -102,7 +102,7 @@ public class AssetLifecycleTests
 
         asset.Status = AssetStatus.Processing;
         Assert.True(AssetLifecycle.TryFailAttempt(asset, Now, "boom", maxAttempts: 3));
-        Assert.Equal(Now + AssetLifecycle.RetryBaseDelay * 2, asset.NextAttemptAt);
+        Assert.Equal(Now + (AssetLifecycle.RetryBaseDelay * 2), asset.NextAttemptAt);
 
         asset.Status = AssetStatus.Processing;
         Assert.True(AssetLifecycle.TryFailAttempt(asset, Now, "boom", maxAttempts: 3));

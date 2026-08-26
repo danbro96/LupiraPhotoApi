@@ -13,8 +13,10 @@ public sealed class ObjectStorageOptions
     /// SigV4 signs the host, so mobile clients must see the same hostname the signature carries.</summary>
     public string PublicEndpoint { get; set; } = "http://localhost:3900";
 
-    public string AccessKey { get; set; } = "";
-    public string SecretKey { get; set; } = "";
+    public string AccessKey { get; set; } = string.Empty;
+
+    public string SecretKey { get; set; } = string.Empty;
+
     public string Bucket { get; set; } = "lupira-photo";
 
     /// <summary>Must match the store's configured region (Garage: <c>s3_region</c>) or signatures fail.</summary>

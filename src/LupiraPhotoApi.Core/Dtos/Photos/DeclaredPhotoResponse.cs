@@ -7,9 +7,13 @@ namespace LupiraPhotoApi.Core.Dtos.Photos;
 public sealed class DeclaredPhotoResponse
 {
     public required Guid AssetId { get; set; }
+
     public required AssetStatus Status { get; set; }
+
     public string? UploadUrl { get; set; }
+
     public DateTimeOffset? UploadExpiresAt { get; set; }
+
     /// <summary>Headers the PUT must echo — they are part of the presigned signature.</summary>
     public required Dictionary<string, string> RequiredHeaders { get; set; }
 }

@@ -32,6 +32,7 @@ public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoS
             if (!Bbox.TryParse(bbox, out var b)) throw new McpException("bbox must be minLon,minLat,maxLon,maxLat.");
             parsed = b;
         }
+
         var pid = (await user.GetAsync(ct)).Id;
         var result = await query.ListAsync(pid, from, to, parsed, kind, null, limit, cursor, ct);
         return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());

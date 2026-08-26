@@ -48,7 +48,9 @@ public sealed class GeoReverseClient(
     private sealed class ReverseResponse
     {
         public string? DisplayName { get; set; }
+
         public string? Locality { get; set; }
+
         public string? Region { get; set; }
     }
 }

@@ -78,6 +78,7 @@ public sealed class PhotoProcessingWorker(
                 logger.LogWarning(ex, "Asset {AssetId} processing attempt {Attempt} failed (now {Status}).",
                     asset.Id, asset.Attempts, asset.Status);
             }
+
             session.Store(asset);
             await session.SaveChangesAsync(ct);
         }
@@ -103,6 +104,7 @@ public sealed class PhotoProcessingWorker(
             await store.DeleteAsync(asset.OriginalKey, ct);
             session.Delete<PhotoAsset>(asset.Id);
         }
+
         await session.SaveChangesAsync(ct);
         logger.LogInformation("Expired {Count} stale Declared assets.", stale.Count);
     }

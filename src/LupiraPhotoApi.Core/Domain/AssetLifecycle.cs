@@ -65,8 +65,9 @@ public static class AssetLifecycle
         else
         {
             asset.Status = AssetStatus.Uploaded;
-            asset.NextAttemptAt = now + RetryBaseDelay * Math.Pow(2, asset.Attempts - 1);
+            asset.NextAttemptAt = now + (RetryBaseDelay * Math.Pow(2, asset.Attempts - 1));
         }
+
         return true;
     }
 

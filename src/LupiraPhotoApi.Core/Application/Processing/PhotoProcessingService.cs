@@ -40,7 +40,13 @@ public sealed class PhotoProcessingService(
         }
         finally
         {
-            try { File.Delete(tempPath); } catch (IOException) { }
+            try
+            {
+                File.Delete(tempPath);
+            }
+            catch (IOException)
+            {
+            }
         }
     }
 
