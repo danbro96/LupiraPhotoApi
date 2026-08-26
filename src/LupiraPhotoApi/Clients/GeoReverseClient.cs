@@ -4,20 +4,6 @@ using Microsoft.Extensions.Options;
 
 namespace LupiraPhotoApi.Clients;
 
-/// <summary>Bound from the <c>Geo</c> section.</summary>
-public sealed class GeoApiOptions
-{
-    public const string SectionName = "Geo";
-
-    /// <summary>Container-to-container over medelynas_data — never via the tunnel.</summary>
-    public string BaseUrl { get; set; } = "http://lupira-geo-api:8080/";
-
-    public string Scope { get; set; } = "lupira-geo-aud";
-
-    /// <summary>Development fallback: sent as <c>X-Dev-User</c> when no service credentials are configured.</summary>
-    public string? DevUser { get; set; }
-}
-
 /// <summary>GeoApi <c>GET /geocode/reverse</c>. Failures return null — a geotag label is decoration,
 /// never a reason to fail an asset.</summary>
 public sealed class GeoReverseClient(
@@ -45,7 +31,7 @@ public sealed class GeoReverseClient(
             using var resp = await http.SendAsync(req, ct);
             if (!resp.IsSuccessStatusCode)
             {
-                logger.LogWarning("Geo reverse returned {Status} for ({Lat}, {Lon}).", (int)resp.StatusCode, latitude, longitude);
+                logger.LogWarning("Geo reverse returned {Status} for ({Lat}, {Lon}).", (int) resp.StatusCode, latitude, longitude);
                 return null;
             }
 

@@ -4,20 +4,6 @@ using Microsoft.Extensions.Options;
 
 namespace LupiraPhotoApi.Clients;
 
-/// <summary>Bound from the <c>LocationApi</c> section.</summary>
-public sealed class LocationApiOptions
-{
-    public const string SectionName = "LocationApi";
-
-    /// <summary>Container-to-container over medelynas_data — the /internal seam 404s through the tunnel.</summary>
-    public string BaseUrl { get; set; } = "http://lupira-location-api:8080/";
-
-    /// <summary>Needs both the audience and the internal-seam scope.</summary>
-    public string Scope { get; set; } = "lupira-location-aud internal:read";
-
-    public string? DevUser { get; set; }
-}
-
 /// <summary>LupiraLocationApi <c>GET /internal/location/place-at</c> — the no-EXIF-GPS fallback.
 /// Returns ~100 m quantized coordinates (the API's synergy-safe cap). Null on no match or failure.</summary>
 public sealed class LocationInternalClient(
@@ -49,7 +35,7 @@ public sealed class LocationInternalClient(
             using var resp = await http.SendAsync(req, ct);
             if (!resp.IsSuccessStatusCode)
             {
-                logger.LogWarning("Location place-at returned {Status} for ts {Ts}.", (int)resp.StatusCode, ts);
+                logger.LogWarning("Location place-at returned {Status} for ts {Ts}.", (int) resp.StatusCode, ts);
                 return null;
             }
 

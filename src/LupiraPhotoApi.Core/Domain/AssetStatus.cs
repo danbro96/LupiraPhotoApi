@@ -1,11 +1,5 @@
 namespace LupiraPhotoApi.Core.Domain;
 
-public enum AssetKind
-{
-    Photo,
-    Video,
-}
-
 public enum AssetStatus
 {
     /// <summary>Metadata registered, presigned PUT issued, bytes not yet confirmed.</summary>
@@ -22,11 +16,4 @@ public enum AssetStatus
 
     /// <summary>Processing exhausted its attempts; terminal until an explicit reprocess.</summary>
     Failed,
-}
-
-public enum GeotagSource
-{
-    None,
-    ExifGps,
-    LocationHistory,
 }

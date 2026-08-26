@@ -15,7 +15,7 @@ public sealed class MagickThumbnailer(FfmpegVideoThumbnailer ffmpegFallback) : I
         {
             using var image = new MagickImage(sourcePath);
             image.AutoOrient();
-            var (sourceWidth, sourceHeight) = ((int)image.Width, (int)image.Height);
+            var (sourceWidth, sourceHeight) = ((int) image.Width, (int) image.Height);
             // ">" = only shrink, never upscale; aspect preserved.
             image.Resize(new MagickGeometry($"{MaxEdge}x{MaxEdge}>"));
             image.Quality = 80;

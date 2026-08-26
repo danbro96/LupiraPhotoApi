@@ -1,5 +1,5 @@
-using LupiraPhotoApi.Core.Application;
 using LupiraPhotoApi.Auth;
+using LupiraPhotoApi.Core.Application;
 using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Dtos.Photos;
 using LupiraPhotoApi.Http;

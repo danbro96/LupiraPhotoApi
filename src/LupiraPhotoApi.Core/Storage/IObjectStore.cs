@@ -1,12 +1,5 @@
 namespace LupiraPhotoApi.Core.Storage;
 
-public sealed class ObjectStat
-{
-    public required long SizeBytes { get; set; }
-    public string? ContentType { get; set; }
-    public string? ETag { get; set; }
-}
-
 /// <summary>Vendor-neutral object-store seam. Reads and uploads are presigned — bytes never proxy
 /// through the API except the worker's own thumbnail round-trip.</summary>
 public interface IObjectStore

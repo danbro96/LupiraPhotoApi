@@ -16,10 +16,3 @@ public sealed class PhotoListItemDto
     public double? DurationSeconds { get; set; }
     public string? ThumbUrl { get; set; }
 }
-
-public sealed class PhotoListResponse
-{
-    public required List<PhotoListItemDto> Items { get; set; }
-    /// <summary>Opaque keyset cursor; absent on the last page.</summary>
-    public string? NextCursor { get; set; }
-}

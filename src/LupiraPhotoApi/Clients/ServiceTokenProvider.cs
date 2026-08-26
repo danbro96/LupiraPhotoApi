@@ -4,19 +4,6 @@ using Microsoft.Extensions.Options;
 
 namespace LupiraPhotoApi.Clients;
 
-/// <summary>Bound from the <c>ServiceAuth</c> section — the lupira-photo-svc client-credentials client.</summary>
-public sealed class ServiceAuthOptions
-{
-    public const string SectionName = "ServiceAuth";
-
-    public string? TokenUrl { get; set; }
-    public string? ClientId { get; set; }
-    public string? ClientSecret { get; set; }
-
-    public bool IsConfigured =>
-        !string.IsNullOrWhiteSpace(TokenUrl) && !string.IsNullOrWhiteSpace(ClientId) && !string.IsNullOrWhiteSpace(ClientSecret);
-}
-
 /// <summary>Mints and caches Authentik client-credentials bearers, one per requested scope — the scope's
 /// mapping is what injects the target backend's audience (geo/location each get their own token).
 /// Per-scope cache with a 30 s expiry skew, per the platform's proven provider.</summary>
