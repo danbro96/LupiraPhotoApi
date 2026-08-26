@@ -12,6 +12,7 @@
           "Me"
         ],
         "summary": "The caller's resolved local identity (JIT-provisioned on first login).",
+        "operationId": "GetMe",
         "responses": {
           "200": {
             "description": "OK",
@@ -24,7 +25,24 @@
             }
           },
           "401": {
-            "description": "Unauthorized"
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -40,6 +58,7 @@
           "Photos"
         ],
         "summary": "Declare an asset (idempotent) and receive a presigned upload URL while bytes are pending.",
+        "operationId": "DeclarePhoto",
         "requestBody": {
           "content": {
             "application/json": {
@@ -60,6 +79,26 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -73,6 +112,7 @@
           "Photos"
         ],
         "summary": "List assets (keyset-paged, newest first) with presigned thumbnail URLs.",
+        "operationId": "ListPhotos",
         "parameters": [
           {
             "name": "from",
@@ -137,6 +177,26 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -152,6 +212,7 @@
           "Photos"
         ],
         "summary": "Verify the uploaded bytes and queue processing (idempotent).",
+        "operationId": "CompletePhotoUpload",
         "parameters": [
           {
             "name": "id",
@@ -175,7 +236,34 @@
             }
           },
           "404": {
-            "description": "Not Found"
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -191,6 +279,7 @@
           "Photos"
         ],
         "summary": "Re-queue a Ready or Failed asset through the processing pipeline.",
+        "operationId": "ReprocessPhoto",
         "parameters": [
           {
             "name": "id",
@@ -214,7 +303,34 @@
             }
           },
           "404": {
-            "description": "Not Found"
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -230,6 +346,7 @@
           "Photos"
         ],
         "summary": "Geotagged Ready assets in a viewport as a GeoJSON FeatureCollection.",
+        "operationId": "GetPhotoMap",
         "parameters": [
           {
             "name": "bbox",
@@ -266,6 +383,26 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -281,6 +418,7 @@
           "Photos"
         ],
         "summary": "One asset with presigned original + thumbnail URLs.",
+        "operationId": "GetPhoto",
         "parameters": [
           {
             "name": "id",
@@ -304,7 +442,34 @@
             }
           },
           "404": {
-            "description": "Not Found"
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -318,6 +483,7 @@
           "Photos"
         ],
         "summary": "Delete an asset: objects first, then the document.",
+        "operationId": "DeletePhoto",
         "parameters": [
           {
             "name": "id",
@@ -334,7 +500,34 @@
             "description": "No Content"
           },
           "404": {
-            "description": "Not Found"
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -394,9 +587,11 @@
             "type": "object",
             "additionalProperties": {
               "type": "string"
-            }
+            },
+            "description": "Headers the PUT must echo — they are part of the presigned signature."
           }
-        }
+        },
+        "description": "Declare outcome. UploadUrl is present only while the asset still needs bytes (status\n            Declared); an already-uploaded asset returns its status so the client skips the transfer."
       },
       "DeclarePhotoRequest": {
         "required": [
@@ -466,7 +661,8 @@
               "string"
             ]
           }
-        }
+        },
+        "description": "Client-side MediaStore metadata for one asset. (DeviceId, MediaStoreId) under the caller is\n            the idempotency key — retrying a declare returns the same asset."
       },
       "GeotagSource": {
         "enum": [
@@ -495,7 +691,8 @@
               "string"
             ]
           }
-        }
+        },
+        "description": "The resolved local identity of the caller."
       },
       "PhotoAssetDto": {
         "required": [
@@ -603,13 +800,15 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Presigned GET, long expiry; null until processed."
           },
           "originalUrl": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Presigned GET, short expiry; only on the single-asset endpoint."
           }
         }
       },
@@ -701,7 +900,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Opaque keyset cursor; absent on the last page."
           }
         }
       },
@@ -743,7 +943,8 @@
             "items": {
               "type": "number",
               "format": "double"
-            }
+            },
+            "description": "[lon, lat]."
           }
         }
       },
@@ -798,7 +999,51 @@
               "$ref": "#/components/schemas/PhotoMapFeatureDto"
             }
           }
-        }
+        },
+        "description": "GeoJSON-shaped map payload — feeds a MapLibre GeoJSON source directly."
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "traceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "RFC 9457 problem details."
       }
     },
     "securitySchemes": {
