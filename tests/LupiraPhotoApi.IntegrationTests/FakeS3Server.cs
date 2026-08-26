@@ -51,13 +51,13 @@ public sealed class FakeS3Server : IAsyncDisposable
             switch (ctx.Request.Method)
             {
                 case "PUT":
-                {
-                    using var buffer = new MemoryStream();
-                    await ctx.Request.Body.CopyToAsync(buffer);
-                    Objects[key] = (buffer.ToArray(), ctx.Request.ContentType);
-                    ctx.Response.Headers.ETag = "\"fake\"";
-                    break;
-                }
+                    {
+                        using var buffer = new MemoryStream();
+                        await ctx.Request.Body.CopyToAsync(buffer);
+                        Objects[key] = (buffer.ToArray(), ctx.Request.ContentType);
+                        ctx.Response.Headers.ETag = "\"fake\"";
+                        break;
+                    }
                 case "HEAD" when Objects.TryGetValue(key, out var head):
                     ctx.Response.ContentLength = head.Bytes.Length;
                     ctx.Response.ContentType = head.ContentType ?? "application/octet-stream";

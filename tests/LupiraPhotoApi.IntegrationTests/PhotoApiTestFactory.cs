@@ -86,26 +86,3 @@ public sealed class PhotoApiTestFactory : WebApplicationFactory<Program>
         }
     }
 }
-
-public sealed class FakeReverseGeocoder : IReverseGeocoder
-{
-    public string? Label { get; set; } = "Testville";
-
-    public Task<string?> ReverseLabelAsync(double latitude, double longitude, CancellationToken ct = default) =>
-        Task.FromResult(Label);
-}
-
-public sealed class FakeLocationHistory : ILocationHistoryClient
-{
-    public LocationHistoryHit? Hit { get; set; }
-
-    public Task<LocationHistoryHit?> PlaceAtAsync(string authentikSub, DateTimeOffset ts, CancellationToken ct = default) =>
-        Task.FromResult(Hit);
-}
-
-/// <summary>ffmpeg stays out of CI — video posters are a fixed WebP payload.</summary>
-public sealed class StubVideoThumbnailer : IVideoThumbnailer
-{
-    public Task<ThumbnailResult> CreateAsync(string sourcePath, CancellationToken ct = default) =>
-        Task.FromResult(new ThumbnailResult { WebpBytes = [0x52, 0x49, 0x46, 0x46], SourceWidth = 1920, SourceHeight = 1080 });
-}
