@@ -1,3 +1,4 @@
+using LupiraPhotoApi.Core.Application;
 using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Dtos.Photos;
 using LupiraPhotoApi.Handlers;
@@ -24,11 +25,19 @@ public static class PhotoEndpoints
             .WithName("ReprocessPhoto")
             .WithSummary("Re-queue a Ready or Failed asset through the processing pipeline.")
             .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
-        g.MapGet("/", (DateTimeOffset? from, DateTimeOffset? to, string? bbox, AssetKind? kind, AssetStatus? status, int? limit, string? cursor, PhotosHandler h, CancellationToken ct) =>
-                h.ListAsync(from, to, bbox, kind, status, limit, cursor, ct))
+        g.MapGet("/", (DateTimeOffset? from, DateTimeOffset? to, string? bbox, AssetKind? kind, AssetStatus? status, bool? located, string? place, PhotoSort? sort, int? limit, string? cursor, PhotosHandler h, CancellationToken ct) =>
+                h.ListAsync(from, to, bbox, kind, status, located, place, sort, limit, cursor, ct))
             .WithName("ListPhotos")
-            .WithSummary("List assets (keyset-paged, newest first) with presigned thumbnail URLs.")
+            .WithSummary("List assets (keyset-paged, newest taken first by default) with presigned thumbnail URLs.")
             .Produces<PhotoListResponse>(StatusCodes.Status200OK);
+        g.MapPost("/lookup", (LookupPhotosRequest body, PhotosHandler h, CancellationToken ct) => h.LookupAsync(body, ct))
+            .WithName("LookupPhotos")
+            .WithSummary("Hydrate up to 200 assets by id — turns relation references into renderable items.")
+            .Produces<PhotoListResponse>(StatusCodes.Status200OK);
+        g.MapGet("/stats", (PhotosHandler h, CancellationToken ct) => h.StatsAsync(ct))
+            .WithName("GetPhotoStats")
+            .WithSummary("Library totals and counts by kind, status, geotag source and month.")
+            .Produces<PhotoStats>(StatusCodes.Status200OK);
         g.MapGet("/map", (string bbox, DateTimeOffset? from, DateTimeOffset? to, PhotosHandler h, CancellationToken ct) => h.MapAsync(bbox, from, to, ct))
             .WithName("GetPhotoMap")
             .WithSummary("Geotagged Ready assets in a viewport as a GeoJSON FeatureCollection.")

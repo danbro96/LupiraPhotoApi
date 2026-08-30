@@ -23,6 +23,11 @@ public sealed class PhotoListItemDto
     public int? Height { get; set; }
 
     public double? DurationSeconds { get; set; }
+    public required GeotagSource GeotagSource { get; set; }
+    public required string ContentType { get; set; }
+    public required long SizeBytes { get; set; }
+    /// <summary>Only set on a Failed asset — lets the health view explain itself without a per-item fetch.</summary>
+    public string? LastError { get; set; }
 
     public string? ThumbUrl { get; set; }
 }

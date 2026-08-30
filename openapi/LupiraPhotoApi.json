@@ -111,7 +111,7 @@
         "tags": [
           "Photos"
         ],
-        "summary": "List assets (keyset-paged, newest first) with presigned thumbnail URLs.",
+        "summary": "List assets (keyset-paged, newest taken first by default) with presigned thumbnail URLs.",
         "operationId": "ListPhotos",
         "parameters": [
           {
@@ -149,6 +149,27 @@
             "in": "query",
             "schema": {
               "$ref": "#/components/schemas/AssetStatus"
+            }
+          },
+          {
+            "name": "located",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "place",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PhotoSort"
             }
           },
           {
@@ -308,6 +329,108 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/photos/lookup": {
+      "post": {
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Hydrate up to 200 assets by id — turns relation references into renderable items.",
+        "operationId": "LookupPhotos",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LookupPhotosRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/photos/stats": {
+      "get": {
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Library totals and counts by kind, status, geotag source and month.",
+        "operationId": "GetPhotoStats",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoStats"
                 }
               }
             }
@@ -671,6 +794,22 @@
           "LocationHistory"
         ]
       },
+      "LookupPhotosRequest": {
+        "required": [
+          "ids"
+        ],
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "description": "Hydrates a set of asset ids in one call — used to turn calendar-item relation references\n            into renderable items."
+      },
       "MeDto": {
         "required": [
           "id",
@@ -817,7 +956,10 @@
           "id",
           "kind",
           "status",
-          "takenAt"
+          "takenAt",
+          "geotagSource",
+          "contentType",
+          "sizeBytes"
         ],
         "type": "object",
         "properties": {
@@ -875,6 +1017,23 @@
               "number"
             ],
             "format": "double"
+          },
+          "geotagSource": {
+            "$ref": "#/components/schemas/GeotagSource"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lastError": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Only set on a Failed asset — lets the health view explain itself without a per-item fetch."
           },
           "thumbUrl": {
             "type": [
@@ -1001,6 +1160,62 @@
           }
         },
         "description": "GeoJSON-shaped map payload — feeds a MapLibre GeoJSON source directly."
+      },
+      "PhotoSort": {
+        "enum": [
+          "TakenAtDesc",
+          "TakenAtAsc",
+          null
+        ]
+      },
+      "PhotoStats": {
+        "required": [
+          "totalAssets",
+          "totalBytes",
+          "byKind",
+          "byStatus",
+          "byGeotagSource",
+          "byMonth"
+        ],
+        "type": "object",
+        "properties": {
+          "totalAssets": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "byKind": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "byStatus": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "byGeotagSource": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "byMonth": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
       },
       "ProblemDetails": {
         "type": "object",

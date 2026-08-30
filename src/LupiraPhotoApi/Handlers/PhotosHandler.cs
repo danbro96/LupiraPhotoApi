@@ -12,6 +12,7 @@ public sealed class PhotosHandler(
     PhotoDeclareService declareService,
     PhotoCompleteService completeService,
     PhotoQueryService queryService,
+    PhotoStatsService statsService,
     PhotoDeleteService deleteService)
 {
     public async Task<Results<Ok<DeclaredPhotoResponse>, ProblemHttpResult, UnauthorizedHttpResult>> DeclareAsync(
@@ -37,7 +38,7 @@ public sealed class PhotosHandler(
 
     public async Task<Results<Ok<PhotoListResponse>, ProblemHttpResult, UnauthorizedHttpResult>> ListAsync(
         DateTimeOffset? from, DateTimeOffset? to, string? bbox, AssetKind? kind, AssetStatus? status,
-        int? limit, string? cursor, CancellationToken ct)
+        bool? located, string? place, PhotoSort? sort, int? limit, string? cursor, CancellationToken ct)
     {
         Bbox? parsed = null;
         if (bbox is not null)
@@ -48,7 +49,21 @@ public sealed class PhotosHandler(
         }
 
         var u = await user.GetAsync(ct);
-        return OpResultMap.OkProblem(await queryService.ListAsync(u.Id, from, to, parsed, kind, status, limit, cursor, ct));
+        return OpResultMap.OkProblem(
+            await queryService.ListAsync(u.Id, from, to, parsed, kind, status, located, place, sort, limit, cursor, ct));
+    }
+
+    public async Task<Results<Ok<PhotoListResponse>, ProblemHttpResult, UnauthorizedHttpResult>> LookupAsync(
+        LookupPhotosRequest request, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return OpResultMap.OkProblem(await queryService.LookupAsync(u.Id, request.Ids, ct));
+    }
+
+    public async Task<Results<Ok<PhotoStats>, ProblemHttpResult, UnauthorizedHttpResult>> StatsAsync(CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return TypedResults.Ok(await statsService.GetAsync(u.Id, ct));
     }
 
     public async Task<Results<Ok<PhotoMapResponse>, ProblemHttpResult, UnauthorizedHttpResult>> MapAsync(

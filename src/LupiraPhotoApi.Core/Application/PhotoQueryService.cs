@@ -11,12 +11,15 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
     public const int DefaultLimit = 100;
     public const int MaxLimit = 500;
     public const int MapLimit = 2000;
+    public const int LookupMax = 200;
 
     public async Task<OpResult<PhotoListResponse>> ListAsync(
         Guid principalId, DateTimeOffset? from, DateTimeOffset? to, Bbox? bbox,
-        AssetKind? kind, AssetStatus? status, int? limit, string? cursor, CancellationToken ct)
+        AssetKind? kind, AssetStatus? status, bool? located, string? place,
+        PhotoSort? sort, int? limit, string? cursor, CancellationToken ct)
     {
         var take = Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit);
+        var order = sort ?? PhotoSort.TakenAtDesc;
         var query = session.Query<PhotoAsset>().Where(a => a.PrincipalId == principalId);
         if (from is { } f) query = query.Where(a => a.TakenAt >= f);
         if (to is { } t) query = query.Where(a => a.TakenAt <= t);
@@ -28,20 +31,28 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
 
         if (kind is { } k) query = query.Where(a => a.Kind == k);
         if (status is { } s) query = query.Where(a => a.Status == s);
+        if (located is { } geotagged)
+            query = geotagged ? query.Where(a => a.Latitude != null) : query.Where(a => a.Latitude == null);
+        if (!string.IsNullOrWhiteSpace(place))
+            query = query.Where(a => a.PlaceLabel != null && a.PlaceLabel.Contains(place, StringComparison.OrdinalIgnoreCase));
 
         if (cursor is not null)
         {
-            if (!PageCursor.TryParse(cursor, out var c))
-                return OpResult<PhotoListResponse>.Invalid("Malformed cursor.");
-            // Postgres row-value comparison = keyset "strictly after the cursor" in (TakenAt, Id) DESC order.
-            // Raw SQL because LINQ can't express a Guid tie-break Marten translates.
-            query = query.Where(a => a.MatchesSql("(d.taken_at, d.id) < (?, ?)", c.TakenAt, c.Id));
+            if (!PageCursor.TryParse(cursor, order, out var c))
+                return OpResult<PhotoListResponse>.Invalid("Malformed cursor, or a cursor from a different sort order.");
+            // Postgres row-value comparison = keyset "strictly after the cursor" in (TakenAt, Id) order.
+            // Raw SQL because LINQ can't express a Guid tie-break Marten translates. The operator has to
+            // match the ORDER BY below or paging silently skips and repeats rows.
+            query = order == PhotoSort.TakenAtDesc
+                ? query.Where(a => a.MatchesSql("(d.taken_at, d.id) < (?, ?)", c.TakenAt, c.Id))
+                : query.Where(a => a.MatchesSql("(d.taken_at, d.id) > (?, ?)", c.TakenAt, c.Id));
         }
 
-        var page = await query
-            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id)
-            .Take(take + 1)
-            .ToListAsync(ct);
+        var ordered = order == PhotoSort.TakenAtDesc
+            ? query.OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id)
+            : query.OrderBy(a => a.TakenAt).ThenBy(a => a.Id);
+
+        var page = await ordered.Take(take + 1).ToListAsync(ct);
 
         var hasMore = page.Count > take;
         var items = new List<PhotoListItemDto>(Math.Min(page.Count, take));
@@ -51,8 +62,27 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
         return OpResult<PhotoListResponse>.Ok(new PhotoListResponse
         {
             Items = items,
-            NextCursor = hasMore ? PageCursor.Format(page[take - 1].TakenAt, page[take - 1].Id) : null,
+            NextCursor = hasMore ? PageCursor.Format(order, page[take - 1].TakenAt, page[take - 1].Id) : null,
         });
+    }
+
+    /// <summary>Hydrates a set of ids in one round trip — how a caller turns relation references (or any
+    /// other id list) into renderable items. Owner-scoped; unknown ids are simply absent.</summary>
+    public async Task<OpResult<PhotoListResponse>> LookupAsync(Guid principalId, IReadOnlyList<Guid> ids, CancellationToken ct)
+    {
+        if (ids.Count > LookupMax)
+            return OpResult<PhotoListResponse>.Invalid($"At most {LookupMax} ids per lookup.");
+        if (ids.Count == 0)
+            return OpResult<PhotoListResponse>.Ok(new PhotoListResponse { Items = [] });
+
+        var assets = await session.Query<PhotoAsset>()
+            .Where(a => a.PrincipalId == principalId && ids.Contains(a.Id))
+            .OrderByDescending(a => a.TakenAt)
+            .ToListAsync(ct);
+
+        var items = new List<PhotoListItemDto>(assets.Count);
+        foreach (var asset in assets) items.Add(await ToListItemAsync(asset, ct));
+        return OpResult<PhotoListResponse>.Ok(new PhotoListResponse { Items = items });
     }
 
     public async Task<OpResult<PhotoMapResponse>> MapAsync(
@@ -105,6 +135,10 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
         Width = asset.Width,
         Height = asset.Height,
         DurationSeconds = asset.DurationSeconds,
+        GeotagSource = asset.GeotagSource,
+        ContentType = asset.ContentType,
+        SizeBytes = asset.SizeBytes,
+        LastError = asset.LastError,
         ThumbUrl = await presigner.ThumbUrlAsync(asset, ct),
     };
 }

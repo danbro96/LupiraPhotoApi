@@ -24,7 +24,9 @@ public static class MartenRegistrations
             .Duplicate(x => x.TakenAt)
             .Duplicate(x => x.Latitude!)
             .Duplicate(x => x.Longitude!)
-            .Duplicate(x => x.Status);
+            .Duplicate(x => x.Status)
+            // Duplicated so place search is an indexed ILIKE rather than a JSONB extraction per row.
+            .Duplicate(x => x.PlaceLabel!);
 
         return opts;
     }

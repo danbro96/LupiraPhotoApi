@@ -34,7 +34,7 @@ public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoS
         }
 
         var pid = (await user.GetAsync(ct)).Id;
-        var result = await query.ListAsync(pid, from, to, parsed, kind, null, limit, cursor, ct);
+        var result = await query.ListAsync(pid, from, to, parsed, kind, null, null, null, null, limit, cursor, ct);
         return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());
     }
 
@@ -47,11 +47,11 @@ public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoS
         CancellationToken ct = default)
     {
         var pid = (await user.GetAsync(ct)).Id;
-        var result = await query.ListAsync(pid, from, to, null, null, null, PhotoQueryService.MaxLimit, null, ct);
+        // Server-side filter: this used to page the newest 500 and match in memory, so anything older
+        // than that window was simply unfindable.
+        var result = await query.ListAsync(pid, from, to, null, null, null, null, place, null, PhotoQueryService.MaxLimit, null, ct);
         if (!result.IsOk) throw new McpException(result.Error ?? result.Status.ToString());
-        return result.Value!.Items
-            .Where(i => i.PlaceLabel?.Contains(place, StringComparison.OrdinalIgnoreCase) == true)
-            .ToList();
+        return result.Value!.Items;
     }
 
     [McpServerTool(Name = "photo_stats")]
