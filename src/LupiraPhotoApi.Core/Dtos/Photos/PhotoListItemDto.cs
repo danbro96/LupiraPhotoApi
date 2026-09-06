@@ -29,5 +29,8 @@ public sealed class PhotoListItemDto
     /// <summary>Only set on a Failed asset — lets the health view explain itself without a per-item fetch.</summary>
     public string? LastError { get; set; }
 
+    /// <summary>On a Duplicate only: the asset that holds the bytes.</summary>
+    public Guid? DuplicateOfId { get; set; }
+
     public string? ThumbUrl { get; set; }
 }

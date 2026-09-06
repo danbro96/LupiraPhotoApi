@@ -70,7 +70,14 @@ public sealed class PhotoProcessingWorker(
                     ?? throw new InvalidOperationException($"Principal {asset.PrincipalId} not found.");
                 await pipeline.ProcessAsync(asset, owner.AuthentikSub, ct);
                 AssetLifecycle.TryCompleteProcessing(asset, DateTimeOffset.UtcNow);
-                logger.LogInformation("Asset {AssetId} processed ({Kind}, geotag {Source}).", asset.Id, asset.Kind, asset.GeotagSource);
+                if (await TryDedupeAsync(session, store, asset, ct))
+                {
+                    logger.LogInformation("Asset {AssetId} is a duplicate of {CanonicalId}; objects deleted.", asset.Id, asset.DuplicateOfId);
+                }
+                else
+                {
+                    logger.LogInformation("Asset {AssetId} processed ({Kind}, geotag {Source}).", asset.Id, asset.Kind, asset.GeotagSource);
+                }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -88,6 +95,29 @@ public sealed class PhotoProcessingWorker(
             _lastJanitorRun = now;
             await ExpireStaleDeclaredAsync(session, store, now, ct);
         }
+    }
+
+    /// <summary>The exact check the declare-time surrogate can't make: identical bytes whose declared
+    /// metadata differed. The newcomer keeps only the pointer — its objects are redundant.</summary>
+    private static async Task<bool> TryDedupeAsync(IDocumentSession session, IObjectStore store, PhotoAsset asset, CancellationToken ct)
+    {
+        if (asset.Sha256 is not { } hash) return false;
+
+        var canonical = await session.Query<PhotoAsset>()
+            .Where(a => a.PrincipalId == asset.PrincipalId
+                     && a.Id != asset.Id
+                     && a.Sha256 == hash
+                     && a.Status != AssetStatus.Duplicate)
+            .OrderBy(a => a.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+        if (canonical is null) return false;
+
+        var thumbKey = asset.ThumbKey;
+        if (!AssetLifecycle.TryMarkDuplicate(asset, canonical.Id, DateTimeOffset.UtcNow)) return false;
+
+        await store.DeleteAsync(asset.OriginalKey, ct);
+        if (thumbKey is not null) await store.DeleteAsync(thumbKey, ct);
+        return true;
     }
 
     private async Task ExpireStaleDeclaredAsync(IDocumentSession session, IObjectStore store, DateTimeOffset now, CancellationToken ct)

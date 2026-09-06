@@ -38,6 +38,9 @@ public sealed class PhotoAssetDto
 
     public string? LastError { get; set; }
 
+    /// <summary>On a Duplicate only: the asset that holds the bytes.</summary>
+    public Guid? DuplicateOfId { get; set; }
+
     /// <summary>Presigned GET, long expiry; null until processed.</summary>
     public string? ThumbUrl { get; set; }
 

@@ -23,6 +23,4 @@ public sealed class DeclarePhotoRequest
     public int? Height { get; set; }
 
     public double? DurationSeconds { get; set; }
-
-    public string? Sha256 { get; set; }
 }

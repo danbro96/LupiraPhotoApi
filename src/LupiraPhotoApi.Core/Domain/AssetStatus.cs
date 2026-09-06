@@ -16,4 +16,7 @@ public enum AssetStatus
 
     /// <summary>Processing exhausted its attempts; terminal until an explicit reprocess.</summary>
     Failed,
+
+    /// <summary>Same content already exists under this principal; owns no bytes, points at the canonical.</summary>
+    Duplicate,
 }

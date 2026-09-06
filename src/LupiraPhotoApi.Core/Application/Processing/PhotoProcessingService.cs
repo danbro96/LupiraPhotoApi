@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Storage;
 using Microsoft.Extensions.Logging;
@@ -21,9 +22,16 @@ public sealed class PhotoProcessingService(
         var tempPath = Path.Combine(Path.GetTempPath(), $"lupira-photo-{asset.Id:N}");
         try
         {
-            await using (var target = File.Create(tempPath))
-            await using (var source = await store.GetStreamAsync(asset.OriginalKey, ct))
-                await source.CopyToAsync(target, ct);
+            // Hash rides the copy the thumbnail already needs — no client-side hashing of huge videos.
+            using (var sha = SHA256.Create())
+            {
+                await using var target = File.Create(tempPath);
+                await using var hashing = new CryptoStream(target, sha, CryptoStreamMode.Write, leaveOpen: true);
+                await using (var source = await store.GetStreamAsync(asset.OriginalKey, ct))
+                    await source.CopyToAsync(hashing, ct);
+                await hashing.FlushFinalBlockAsync(ct);
+                asset.Sha256 = Convert.ToHexStringLower(sha.Hash!);
+            }
 
             var thumb = asset.Kind == AssetKind.Photo
                 ? await photoThumbnailer.CreateAsync(tempPath, ct)

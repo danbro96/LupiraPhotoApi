@@ -26,7 +26,12 @@ public static class MartenRegistrations
             .Duplicate(x => x.Longitude!)
             .Duplicate(x => x.Status)
             // Duplicated so place search is an indexed ILIKE rather than a JSONB extraction per row.
-            .Duplicate(x => x.PlaceLabel!);
+            .Duplicate(x => x.PlaceLabel!)
+            // Duplicate detection: the declare-time surrogate joins TakenAt+SizeBytes, the worker's
+            // exact check is a Sha256 lookup, and DuplicateOfId carries the delete cascade.
+            .Duplicate(x => x.SizeBytes)
+            .Duplicate(x => x.Sha256!)
+            .Duplicate(x => x.DuplicateOfId!);
 
         return opts;
     }

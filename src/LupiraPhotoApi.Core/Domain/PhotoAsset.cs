@@ -41,7 +41,11 @@ public sealed class PhotoAsset
 
     public double? DurationSeconds { get; set; }
 
+    /// <summary>Of the original bytes, computed by the worker — never trusted from the client.</summary>
     public string? Sha256 { get; set; }
+
+    /// <summary>On a Duplicate only: the asset that holds the bytes.</summary>
+    public Guid? DuplicateOfId { get; set; }
 
     public string OriginalKey { get; set; } = string.Empty;
 

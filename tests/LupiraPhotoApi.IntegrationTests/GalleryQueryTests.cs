@@ -13,10 +13,10 @@ public class GalleryQueryTests(PhotoApiTestFactory factory) : IntegrationTest(fa
     /// <summary>Five assets on consecutive days, the middle one ungeotagged.</summary>
     private async Task<List<Guid>> SeedAsync(HttpClient api)
     {
-        var bytes = TinyJpeg();
         var ids = new List<Guid>();
         for (var i = 0; i < 5; i++)
         {
+            var bytes = TinyJpeg(i);
             var request = PhotoDeclare(bytes, mediaStoreId: $"media-{i}", lat: i == 2 ? null : 59.33, lon: i == 2 ? null : 18.07);
             request.TakenAt = new DateTimeOffset(2026, 8, 1 + i, 12, 0, 0, TimeSpan.Zero);
             ids.Add(await UploadFlowAsync(api, request, bytes));

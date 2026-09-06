@@ -30,7 +30,8 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
         }
 
         if (kind is { } k) query = query.Where(a => a.Kind == k);
-        if (status is { } s) query = query.Where(a => a.Status == s);
+        // Duplicates are the same photo twice — never in a default listing, only when asked for by name.
+        query = status is { } s ? query.Where(a => a.Status == s) : query.Where(a => a.Status != AssetStatus.Duplicate);
         if (located is { } geotagged)
             query = geotagged ? query.Where(a => a.Latitude != null) : query.Where(a => a.Latitude == null);
         if (!string.IsNullOrWhiteSpace(place))
@@ -139,6 +140,7 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
         ContentType = asset.ContentType,
         SizeBytes = asset.SizeBytes,
         LastError = asset.LastError,
+        DuplicateOfId = asset.DuplicateOfId,
         ThumbUrl = await presigner.ThumbUrlAsync(asset, ct),
     };
 }

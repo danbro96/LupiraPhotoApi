@@ -23,9 +23,11 @@ public abstract class IntegrationTest(PhotoApiTestFactory factory) : IAsyncLifet
     public async Task InitializeAsync() => await Factory.ResetAsync();
     public Task DisposeAsync() => Task.CompletedTask;
 
-    protected static byte[] TinyJpeg()
+    /// <summary>Distinct <paramref name="variant"/>s produce distinct bytes — seeding several assets from
+    /// one variant makes them duplicates of each other, which is a fixture bug, not a test case.</summary>
+    protected static byte[] TinyJpeg(int variant = 0)
     {
-        using var image = new MagickImage(MagickColors.CornflowerBlue, 32, 24);
+        using var image = new MagickImage(MagickColor.FromRgb((byte)(40 + (variant * 20)), 120, 210), 32, 24);
         image.Format = MagickFormat.Jpeg;
         return image.ToByteArray();
     }

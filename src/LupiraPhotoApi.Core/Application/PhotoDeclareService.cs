@@ -26,6 +26,7 @@ public sealed class PhotoDeclareService(IDocumentSession session, IObjectStore s
         var asset = await session.LoadAsync<PhotoAsset>(id, ct);
         if (asset is null)
         {
+            var canonical = await FindCanonicalAsync(principalId, id, req, ct);
             asset = new PhotoAsset
             {
                 Id = id,
@@ -42,16 +43,16 @@ public sealed class PhotoDeclareService(IDocumentSession session, IObjectStore s
                 Width = req.Width,
                 Height = req.Height,
                 DurationSeconds = req.DurationSeconds,
-                Sha256 = req.Sha256,
                 OriginalKey = ObjectKeys.Original(principalId, req.TakenAt, id, extension),
                 ThumbKey = null,
                 CreatedAt = DateTimeOffset.UtcNow,
             };
+            if (canonical is { } original) AssetLifecycle.TryMarkDuplicate(asset, original, DateTimeOffset.UtcNow);
             session.Store(asset);
             await session.SaveChangesAsync(ct);
         }
 
-        // Beyond Declared the bytes are already in — return status only so the client skips the transfer.
+        // Beyond Declared there is nothing to send: the bytes are already in, or another asset holds them.
         if (asset.Status != AssetStatus.Declared)
         {
             return OpResult<DeclaredPhotoResponse>.Ok(new DeclaredPhotoResponse
@@ -73,6 +74,24 @@ public sealed class PhotoDeclareService(IDocumentSession session, IObjectStore s
             // Content-Type rides the signature — a PUT without it (or with another value) fails auth.
             RequiredHeaders = new Dictionary<string, string> { ["Content-Type"] = asset.ContentType },
         });
+    }
+
+    /// <summary>Byte-identical copies share capture time and byte count — caught before any transfer.
+    /// The worker's Sha256 check is the exact backstop. Only an asset that actually holds bytes can be
+    /// a canonical: a Declared one may never be uploaded, and the janitor eventually expires it.</summary>
+    private async Task<Guid?> FindCanonicalAsync(Guid principalId, Guid id, DeclarePhotoRequest req, CancellationToken ct)
+    {
+        var match = await session.Query<PhotoAsset>()
+            .Where(a => a.PrincipalId == principalId
+                     && a.Id != id
+                     && a.TakenAt == req.TakenAt
+                     && a.SizeBytes == req.SizeBytes
+                     && a.ContentType == req.ContentType
+                     && a.Status != AssetStatus.Duplicate
+                     && a.Status != AssetStatus.Declared)
+            .OrderBy(a => a.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+        return match?.Id;
     }
 
     internal static Guid AssetId(Guid principalId, string deviceId, string mediaStoreId) =>

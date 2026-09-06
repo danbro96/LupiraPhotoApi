@@ -71,6 +71,23 @@ public static class AssetLifecycle
         return true;
     }
 
+    /// <summary>Declared (surrogate match, no bytes sent) | Ready (hash match, caller deletes the bytes)
+    /// → Duplicate. Terminal: a duplicate owns nothing to reprocess.</summary>
+    public static bool TryMarkDuplicate(PhotoAsset asset, Guid canonicalId, DateTimeOffset now)
+    {
+        if (asset.Status is not (AssetStatus.Declared or AssetStatus.Ready)) return false;
+        if (canonicalId == asset.Id) return false;
+        asset.Status = AssetStatus.Duplicate;
+        asset.DuplicateOfId = canonicalId;
+        asset.ProcessedAt = now;
+        asset.ThumbKey = null;
+        asset.Attempts = 0;
+        asset.NextAttemptAt = null;
+        asset.LeaseUntil = null;
+        asset.LastError = null;
+        return true;
+    }
+
     /// <summary>Ready | Failed → Uploaded with a fresh attempt budget (the reprocess endpoint).</summary>
     public static bool TryReprocess(PhotoAsset asset)
     {

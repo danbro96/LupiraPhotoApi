@@ -18,6 +18,8 @@ public sealed class PhotoDeleteService(IDocumentSession session, IObjectStore st
         if (asset.ThumbKey is { } thumbKey) await store.DeleteAsync(thumbKey, ct);
 
         session.Delete<PhotoAsset>(assetId);
+        // Pointers to bytes that no longer exist. They can't be promoted — a duplicate never had its own.
+        session.DeleteWhere<PhotoAsset>(a => a.DuplicateOfId == assetId);
         await session.SaveChangesAsync(ct);
         return OpResult.Ok();
     }

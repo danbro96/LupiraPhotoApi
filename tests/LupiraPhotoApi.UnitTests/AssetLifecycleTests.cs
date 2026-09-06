@@ -36,6 +36,7 @@ public class AssetLifecycleTests
     [InlineData(AssetStatus.Processing)]
     [InlineData(AssetStatus.Ready)]
     [InlineData(AssetStatus.Failed)]
+    [InlineData(AssetStatus.Duplicate)]
     public void MarkUploaded_FromAnythingElse_IsRejected(AssetStatus status)
     {
         var asset = Asset(status);
@@ -132,8 +133,48 @@ public class AssetLifecycleTests
     [InlineData(AssetStatus.Declared)]
     [InlineData(AssetStatus.Uploaded)]
     [InlineData(AssetStatus.Processing)]
+    [InlineData(AssetStatus.Duplicate)]
     public void Reprocess_FromPipelineStates_IsRejected(AssetStatus status)
     {
         Assert.False(AssetLifecycle.TryReprocess(Asset(status)));
+    }
+
+    [Theory]
+    [InlineData(AssetStatus.Declared)]
+    [InlineData(AssetStatus.Ready)]
+    public void MarkDuplicate_PointsAtTheCanonicalAndDropsTheThumb(AssetStatus status)
+    {
+        var asset = Asset(status);
+        asset.ThumbKey = "thumbs/x.webp";
+        asset.Attempts = 2;
+        asset.LastError = "old";
+        var canonical = Guid.NewGuid();
+
+        Assert.True(AssetLifecycle.TryMarkDuplicate(asset, canonical, Now));
+        Assert.Equal(AssetStatus.Duplicate, asset.Status);
+        Assert.Equal(canonical, asset.DuplicateOfId);
+        Assert.Null(asset.ThumbKey);
+        Assert.Equal(0, asset.Attempts);
+        Assert.Null(asset.LastError);
+    }
+
+    [Theory]
+    [InlineData(AssetStatus.Uploaded)]
+    [InlineData(AssetStatus.Processing)]
+    [InlineData(AssetStatus.Failed)]
+    [InlineData(AssetStatus.Duplicate)]
+    public void MarkDuplicate_FromOtherStates_IsRejected(AssetStatus status)
+    {
+        var asset = Asset(status);
+        Assert.False(AssetLifecycle.TryMarkDuplicate(asset, Guid.NewGuid(), Now));
+        Assert.Equal(status, asset.Status);
+    }
+
+    [Fact]
+    public void MarkDuplicate_OfItself_IsRejected()
+    {
+        var asset = Asset(AssetStatus.Ready);
+        Assert.False(AssetLifecycle.TryMarkDuplicate(asset, asset.Id, Now));
+        Assert.Equal(AssetStatus.Ready, asset.Status);
     }
 }
