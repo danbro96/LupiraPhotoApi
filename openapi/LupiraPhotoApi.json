@@ -1175,8 +1175,7 @@
       "PhotoSort": {
         "enum": [
           "TakenAtDesc",
-          "TakenAtAsc",
-          null
+          "TakenAtAsc"
         ]
       },
       "PhotoStats": {
