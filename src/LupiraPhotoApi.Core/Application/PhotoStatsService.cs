@@ -1,3 +1,4 @@
+using LupiraPhotoApi.Core.Application.Results;
 using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Dtos.Photos;
 using Marten;
@@ -48,5 +49,37 @@ public sealed class PhotoStatsService(IQuerySession session)
             .ThenBy(kv => kv.Key, StringComparer.Ordinal)
             .Take(Math.Clamp(limit ?? DefaultPlaceLimit, 1, MaxPlaceLimit))
             .Select(kv => new PhotoPlaceCount { Label = kv.Key, Count = kv.Value })
+            .ToList();
+
+    /// <summary>Measured locations only: a Folder geotag is the import folder's assumed place, not where the photo was taken.</summary>
+    public async Task<OpResult<List<PhotoDensityCellDto>>> DensityAsync(
+        Guid principalId, DateTimeOffset? from, DateTimeOffset? to, CancellationToken ct)
+    {
+        if (from > to)
+            return OpResult<List<PhotoDensityCellDto>>.Invalid("from must not be after to.");
+
+        var query = session.Query<PhotoAsset>()
+            .Where(a => a.PrincipalId == principalId && a.Status == AssetStatus.Ready && a.TrashedAt == null
+                     && a.Latitude != null && a.Longitude != null && a.GeotagSource != GeotagSource.Folder);
+        if (from is { } f) query = query.Where(a => a.TakenAt >= f);
+        if (to is { } t) query = query.Where(a => a.TakenAt <= t);
+
+        var rows = await query.Select(a => new { a.Latitude, a.Longitude, a.TakenAt }).ToListAsync(ct);
+        return OpResult<List<PhotoDensityCellDto>>.Ok(Aggregate(rows.Select(r => (r.Latitude!.Value, r.Longitude!.Value, r.TakenAt))));
+    }
+
+    internal static List<PhotoDensityCellDto> Aggregate(IEnumerable<(double Latitude, double Longitude, DateTimeOffset TakenAt)> rows) =>
+        rows.GroupBy(r => (Latitude: Math.Round(r.Latitude, 3), Longitude: Math.Round(r.Longitude, 3)))
+            .Select(g => new PhotoDensityCellDto
+            {
+                Latitude = g.Key.Latitude,
+                Longitude = g.Key.Longitude,
+                Count = g.Count(),
+                Days = g.Select(r => DateOnly.FromDateTime(r.TakenAt.UtcDateTime)).Distinct().Order().ToList(),
+            })
+            .OrderByDescending(c => c.Days.Count)
+            .ThenByDescending(c => c.Count)
+            .ThenBy(c => c.Latitude)
+            .ThenBy(c => c.Longitude)
             .ToList();
 }

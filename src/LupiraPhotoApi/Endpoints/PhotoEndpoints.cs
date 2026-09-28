@@ -58,6 +58,10 @@ public static class PhotoEndpoints
             .WithName("GetPhotoMap")
             .WithSummary("Geotagged Ready assets in a viewport as a GeoJSON FeatureCollection.")
             .Produces<PhotoMapResponse>(StatusCodes.Status200OK);
+        g.MapGet("/density", (DateTimeOffset? from, DateTimeOffset? to, PhotosHandler h, CancellationToken ct) => h.DensityAsync(from, to, ct))
+            .WithName("GetPhotoDensity")
+            .WithSummary("Measured-location Ready photos per ~100 m cell with their distinct UTC days, most days first.")
+            .Produces<List<PhotoDensityCellDto>>(StatusCodes.Status200OK);
         g.MapGet("/{id:guid}", (Guid id, PhotosHandler h, CancellationToken ct) => h.GetAsync(id, ct))
             .WithName("GetPhoto")
             .WithSummary("One asset with presigned original + thumbnail URLs.")

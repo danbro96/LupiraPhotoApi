@@ -798,6 +798,73 @@
         ]
       }
     },
+    "/photos/density": {
+      "get": {
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Measured-location Ready photos per ~100 m cell with their distinct UTC days, most days first.",
+        "operationId": "GetPhotoDensity",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoDensityCellDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/photos/{id}": {
       "get": {
         "tags": [
@@ -1533,6 +1600,38 @@
             "description": "Presigned GET, short expiry; only on the single-asset endpoint."
           }
         }
+      },
+      "PhotoDensityCellDto": {
+        "required": [
+          "latitude",
+          "longitude",
+          "count",
+          "days"
+        ],
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Distinct UTC capture dates, ascending."
+          }
+        },
+        "description": "The photos in one ~100 m cell: coordinates rounded to 3 decimals."
       },
       "PhotoListItemDto": {
         "required": [

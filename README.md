@@ -24,9 +24,9 @@ owner-scoped. Bytes live in an S3-compatible object store (Garage); Postgres hol
   becomes Ready without a label rather than failing. Failed attempts retry with exponential backoff.
 - **Query** — keyset-paged list (time window, bbox, kind, status, located, place, source album, trash)
   with presigned thumbnail URLs, id lookup, a GeoJSON `FeatureCollection` endpoint shaped for a MapLibre
-  source, stats, imported albums, place-label suggestions, and single-asset reads with a short-lived
-  presigned original URL. A presigned GET is reused for half its expiry, so clients' URL-keyed image caches
-  hit across refetches.
+  source, measured-location photo counts per ~100 m cell, stats, imported albums, place-label suggestions,
+  and single-asset reads with a short-lived presigned original URL. A presigned GET is reused for half its
+  expiry, so clients' URL-keyed image caches hit across refetches.
 - **Trash** — `POST /photos/{id}/trash` / `restore` soft-delete without touching status or bytes. Trashed
   assets are left out of every read except `GET /photos?trashed=true` and `GET /photos/{id}`, and are
   purged after `Photos:TrashRetentionDays` (default 30; each DTO carries `purgesAt`). `DELETE /photos/trash`
@@ -37,7 +37,7 @@ owner-scoped. Bytes live in an S3-compatible object store (Garage); Postgres hol
 
 | Surface | Base path | Auth | Notes |
 |---|---|---|---|
-| REST (owner) | `/photos`, `/me` | OIDC JWT (`ApiPolicy`) | Declare/complete, list/lookup/map/stats/albums/places, get/update, trash/restore/empty-trash, delete, reprocess. |
+| REST (owner) | `/photos`, `/me` | OIDC JWT (`ApiPolicy`) | Declare/complete, list/lookup/map/density/stats/albums/places, get/update, trash/restore/empty-trash, delete, reprocess. |
 | MCP (agent) | `/mcp` | OIDC JWT (`ApiPolicy`) | Streamable HTTP. Read-only: `list_photos`, `search_photos`, `photo_stats`. |
 | Health | `/livez`, `/readyz` | none | Liveness / readiness (Postgres + object store reachable). |
 | OpenAPI | `/openapi/v1.json` | none | Generated at build time into `openapi/`. |

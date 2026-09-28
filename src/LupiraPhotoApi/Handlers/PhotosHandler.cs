@@ -76,6 +76,13 @@ public sealed class PhotosHandler(
         return TypedResults.Ok(await statsService.PlacesAsync(u.Id, q, limit, ct));
     }
 
+    public async Task<Results<Ok<List<PhotoDensityCellDto>>, ProblemHttpResult, UnauthorizedHttpResult>> DensityAsync(
+        DateTimeOffset? from, DateTimeOffset? to, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return OpResultMap.OkProblem(await statsService.DensityAsync(u.Id, from, to, ct));
+    }
+
     public async Task<Results<Ok<PhotoMapResponse>, ProblemHttpResult, UnauthorizedHttpResult>> MapAsync(
         string bbox, DateTimeOffset? from, DateTimeOffset? to, CancellationToken ct)
     {
