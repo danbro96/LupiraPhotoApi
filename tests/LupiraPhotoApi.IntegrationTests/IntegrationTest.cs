@@ -1,7 +1,9 @@
 using System.Net.Http.Json;
 using ImageMagick;
 using LupiraPhotoApi.Core.Domain;
+using LupiraPhotoApi.Core.Dtos.Me;
 using LupiraPhotoApi.Core.Dtos.Photos;
+using Marten;
 using Xunit;
 
 namespace LupiraPhotoApi.IntegrationTests;
@@ -77,6 +79,32 @@ public abstract class IntegrationTest(PhotoApiTestFactory factory) : IAsyncLifet
         await CompleteAsync(api, declared.AssetId);
         return declared.AssetId;
     }
+
+    protected static async Task<Guid> PrincipalIdAsync(HttpClient api) =>
+        (await api.GetFromJsonAsync<MeDto>("/me", Json))!.Id;
+
+    /// <summary>Writes documents straight to Marten — for states the API can't produce on demand (backdated
+    /// trash, imported albums, varied place labels). They own no objects.</summary>
+    protected async Task StoreAsync(params PhotoAsset[] assets)
+    {
+        await using var session = Factory.Store.LightweightSession();
+        session.Store(assets);
+        await session.SaveChangesAsync();
+    }
+
+    protected static PhotoAsset Seeded(Guid principalId) => new()
+    {
+        Id = Guid.NewGuid(),
+        PrincipalId = principalId,
+        DeviceId = "import:handelser",
+        MediaStoreId = Guid.NewGuid().ToString(),
+        Kind = AssetKind.Photo,
+        Status = AssetStatus.Ready,
+        TakenAt = new DateTimeOffset(2017, 10, 5, 12, 0, 0, TimeSpan.Zero),
+        ContentType = "image/jpeg",
+        SizeBytes = 1,
+        CreatedAt = DateTimeOffset.UtcNow,
+    };
 
     /// <summary>Polls the asset until the background worker lands it on <paramref name="status"/>.</summary>
     protected static async Task<PhotoAssetDto> WaitForStatusAsync(HttpClient api, Guid assetId, AssetStatus status, int timeoutSeconds = 20)

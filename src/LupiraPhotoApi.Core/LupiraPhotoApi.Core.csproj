@@ -18,6 +18,7 @@
          OpResult), Dtos, and the vendor-neutral IObjectStore seam. Bytes live in the object store; Marten holds
          only asset documents on the `photo` schema. No ASP.NET dependency — that lives in the host. -->
     <PackageReference Include="Marten" Version="9.40.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.12" />
   </ItemGroup>
 
 </Project>

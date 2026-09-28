@@ -33,7 +33,9 @@ public static class MartenRegistrations
             .Duplicate(x => x.Sha256!)
             .Duplicate(x => x.DuplicateOfId!)
             // Albums review groups by it, and the gallery filters on it.
-            .Duplicate(x => x.SourceAlbum!);
+            .Duplicate(x => x.SourceAlbum!)
+            // Every read excludes the trash, and the retention purge sweeps it across principals.
+            .Duplicate(x => x.TrashedAt!);
 
         return opts;
     }

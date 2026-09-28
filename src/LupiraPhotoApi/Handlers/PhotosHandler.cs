@@ -14,6 +14,7 @@ public sealed class PhotosHandler(
     PhotoQueryService queryService,
     PhotoStatsService statsService,
     PhotoDeleteService deleteService,
+    PhotoTrashService trashService,
     PhotoCurationService curationService,
     PhotoAlbumService albumService)
 {
@@ -40,7 +41,7 @@ public sealed class PhotosHandler(
 
     public async Task<Results<Ok<PhotoListResponse>, ProblemHttpResult, UnauthorizedHttpResult>> ListAsync(
         DateTimeOffset? from, DateTimeOffset? to, string? bbox, AssetKind? kind, AssetStatus? status,
-        bool? located, string? place, string? sourceAlbum, PhotoSort? sort, int? limit, string? cursor, CancellationToken ct)
+        bool? located, string? place, string? sourceAlbum, bool? trashed, PhotoSort? sort, int? limit, string? cursor, CancellationToken ct)
     {
         Bbox? parsed = null;
         if (bbox is not null)
@@ -52,7 +53,7 @@ public sealed class PhotosHandler(
 
         var u = await user.GetAsync(ct);
         return OpResultMap.OkProblem(
-            await queryService.ListAsync(u.Id, from, to, parsed, kind, status, located, place, sourceAlbum, sort, limit, cursor, ct));
+            await queryService.ListAsync(u.Id, from, to, parsed, kind, status, located, place, sourceAlbum, trashed, sort, limit, cursor, ct));
     }
 
     public async Task<Results<Ok<PhotoListResponse>, ProblemHttpResult, UnauthorizedHttpResult>> LookupAsync(
@@ -66,6 +67,13 @@ public sealed class PhotosHandler(
     {
         var u = await user.GetAsync(ct);
         return TypedResults.Ok(await statsService.GetAsync(u.Id, ct));
+    }
+
+    public async Task<Results<Ok<List<PhotoPlaceCount>>, UnauthorizedHttpResult>> PlacesAsync(
+        string? q, int? limit, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return TypedResults.Ok(await statsService.PlacesAsync(u.Id, q, limit, ct));
     }
 
     public async Task<Results<Ok<PhotoMapResponse>, ProblemHttpResult, UnauthorizedHttpResult>> MapAsync(
@@ -89,6 +97,27 @@ public sealed class PhotosHandler(
     {
         var u = await user.GetAsync(ct);
         return OpResultMap.NoContentNotFoundProblem(await deleteService.DeleteAsync(u.Id, id, ct));
+    }
+
+    public async Task<Results<Ok<PhotoAssetDto>, NotFound, ProblemHttpResult, UnauthorizedHttpResult>> TrashAsync(
+        Guid id, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return OpResultMap.OkNotFoundProblem(await trashService.TrashAsync(u.Id, id, ct));
+    }
+
+    public async Task<Results<Ok<PhotoAssetDto>, NotFound, ProblemHttpResult, UnauthorizedHttpResult>> RestoreAsync(
+        Guid id, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return OpResultMap.OkNotFoundProblem(await trashService.RestoreAsync(u.Id, id, ct));
+    }
+
+    public async Task<Results<NoContent, UnauthorizedHttpResult>> EmptyTrashAsync(CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        await deleteService.EmptyTrashAsync(u.Id, ct);
+        return TypedResults.NoContent();
     }
 
     public async Task<Results<Ok<PhotoAssetDto>, NotFound, ProblemHttpResult, UnauthorizedHttpResult>> UpdateAsync(

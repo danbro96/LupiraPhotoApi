@@ -6,6 +6,9 @@ public sealed class PhotoStats
 
     public required long TotalBytes { get; set; }
 
+    /// <summary>Excluded from every other figure.</summary>
+    public required long TrashedAssets { get; set; }
+
     public required Dictionary<string, int> ByKind { get; set; }
 
     public required Dictionary<string, int> ByStatus { get; set; }

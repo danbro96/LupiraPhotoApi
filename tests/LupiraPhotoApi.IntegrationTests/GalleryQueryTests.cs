@@ -157,6 +157,56 @@ public class GalleryQueryTests(PhotoApiTestFactory factory) : IntegrationTest(fa
     }
 
     [Fact]
+    public async Task PlacesSuggestLabelsByUseAndMatchLikeThePlaceFilter()
+    {
+        var anna = Factory.ApiClient("anna@example.com");
+        var me = await PrincipalIdAsync(anna);
+        var erik = await PrincipalIdAsync(Factory.ApiClient("erik@example.com"));
+        PhotoAsset Placed(Guid owner, string label)
+        {
+            var asset = Seeded(owner);
+            asset.PlaceLabel = label;
+            return asset;
+        }
+
+        var trashed = Placed(me, "Paris");
+        trashed.TrashedAt = DateTimeOffset.UtcNow;
+        var duplicate = Placed(me, "Paris");
+        duplicate.Status = AssetStatus.Duplicate;
+        await StoreAsync(
+            Placed(me, "Stockholm"), Placed(me, "Stockholm"), Placed(me, "Stockholm"),
+            Placed(me, "Uppsala"), Placed(me, "Uppsala"), Placed(me, "Gothenburg"),
+            trashed, duplicate, Placed(erik, "Berlin"), Seeded(me));
+
+        var all = await anna.GetFromJsonAsync<List<PhotoPlaceCount>>("/photos/places", Json);
+        Assert.Equal([("Stockholm", 3), ("Uppsala", 2), ("Gothenburg", 1)], all!.Select(p => (p.Label, p.Count)));
+
+        Assert.Equal(["Stockholm"], (await anna.GetFromJsonAsync<List<PhotoPlaceCount>>("/photos/places?q=HOLM", Json))!.Select(p => p.Label));
+        Assert.Equal(["Stockholm"], (await anna.GetFromJsonAsync<List<PhotoPlaceCount>>("/photos/places?limit=1", Json))!.Select(p => p.Label));
+
+        // A suggestion's count is what picking it in the place filter returns.
+        var suggested = await anna.GetFromJsonAsync<List<PhotoPlaceCount>>("/photos/places?q=o", Json);
+        Assert.Equal((await DrainAsync(anna, "/photos?limit=50&place=o")).Count, suggested!.Sum(p => p.Count));
+    }
+
+    [Fact]
+    public async Task RepeatedListingsHandOutTheSameThumbnailUrl()
+    {
+        var api = Factory.ApiClient("anna@example.com");
+        var bytes = TinyJpeg();
+        var id = await UploadFlowAsync(api, PhotoDeclare(bytes), bytes);
+        await WaitForStatusAsync(api, id, AssetStatus.Ready);
+
+        var first = (await api.GetFromJsonAsync<PhotoListResponse>("/photos", Json))!.Items.Single().ThumbUrl;
+        // SigV4 stamps the signing second into the URL, so a fresh signature would differ by now.
+        await Task.Delay(TimeSpan.FromSeconds(1.1));
+        var second = (await api.GetFromJsonAsync<PhotoListResponse>("/photos", Json))!.Items.Single().ThumbUrl;
+
+        Assert.NotNull(first);
+        Assert.Equal(first, second);
+    }
+
+    [Fact]
     public async Task StatsAreOwnerScoped()
     {
         await SeedAsync(Factory.ApiClient("anna@example.com"));

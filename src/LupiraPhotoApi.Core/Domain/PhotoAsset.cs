@@ -65,6 +65,9 @@ public sealed class PhotoAsset
     /// <summary>On a Duplicate only: the asset that holds the bytes.</summary>
     public Guid? DuplicateOfId { get; set; }
 
+    /// <summary>Soft delete, orthogonal to <see cref="Status"/>; the bytes stay until a purge.</summary>
+    public DateTimeOffset? TrashedAt { get; set; }
+
     public string OriginalKey { get; set; } = string.Empty;
 
     public string? ThumbKey { get; set; }

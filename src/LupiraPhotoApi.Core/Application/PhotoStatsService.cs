@@ -1,22 +1,28 @@
 using LupiraPhotoApi.Core.Domain;
+using LupiraPhotoApi.Core.Dtos.Photos;
 using Marten;
 
 namespace LupiraPhotoApi.Core.Application;
 
 public sealed class PhotoStatsService(IQuerySession session)
 {
+    public const int DefaultPlaceLimit = 10;
+    public const int MaxPlaceLimit = 50;
+
     public async Task<PhotoStats> GetAsync(Guid principalId, CancellationToken ct)
     {
         // Family-scale library: pull the thin projection and aggregate in memory.
-        var assets = await session.Query<PhotoAsset>()
+        var all = await session.Query<PhotoAsset>()
             .Where(a => a.PrincipalId == principalId)
-            .Select(a => new { a.Kind, a.Status, a.GeotagSource, a.SizeBytes, a.TakenAt, a.Camera })
+            .Select(a => new { a.Kind, a.Status, a.GeotagSource, a.SizeBytes, a.TakenAt, a.Camera, a.TrashedAt })
             .ToListAsync(ct);
+        var assets = all.Where(a => a.TrashedAt is null).ToList();
 
         return new PhotoStats
         {
             TotalAssets = assets.Count,
             TotalBytes = assets.Sum(a => a.SizeBytes),
+            TrashedAssets = all.Count - assets.Count,
             ByKind = assets.CountBy(a => a.Kind.ToString()).ToDictionary(),
             ByStatus = assets.CountBy(a => a.Status.ToString()).ToDictionary(),
             ByGeotagSource = assets.CountBy(a => a.GeotagSource.ToString()).ToDictionary(),
@@ -24,4 +30,23 @@ public sealed class PhotoStatsService(IQuerySession session)
             ByCamera = assets.Select(a => DtoMapping.CameraName(a.Camera)).OfType<string>().CountBy(n => n).OrderByDescending(kv => kv.Value).ToDictionary(),
         };
     }
+
+    /// <summary>Place-filter suggestions: <paramref name="q"/> matches exactly as the list's <c>place</c> filter does.</summary>
+    public async Task<List<PhotoPlaceCount>> PlacesAsync(Guid principalId, string? q, int? limit, CancellationToken ct)
+    {
+        var query = session.Query<PhotoAsset>()
+            .Where(a => a.PrincipalId == principalId && a.TrashedAt == null && a.Status != AssetStatus.Duplicate && a.PlaceLabel != null);
+        if (!string.IsNullOrWhiteSpace(q))
+            query = query.Where(a => a.PlaceLabel!.Contains(q, StringComparison.OrdinalIgnoreCase));
+
+        return RankPlaces(await query.Select(a => a.PlaceLabel!).ToListAsync(ct), limit);
+    }
+
+    internal static List<PhotoPlaceCount> RankPlaces(IEnumerable<string> labels, int? limit) =>
+        labels.CountBy(label => label)
+            .OrderByDescending(kv => kv.Value)
+            .ThenBy(kv => kv.Key, StringComparer.Ordinal)
+            .Take(Math.Clamp(limit ?? DefaultPlaceLimit, 1, MaxPlaceLimit))
+            .Select(kv => new PhotoPlaceCount { Label = kv.Key, Count = kv.Value })
+            .ToList();
 }

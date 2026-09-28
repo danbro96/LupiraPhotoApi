@@ -70,6 +70,7 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 });
 
 builder.Services.AddHostedService<PhotoProcessingWorker>();
+builder.Services.AddHostedService<TrashPurgeWorker>();
 
 // --- Auth: OIDC JWT (Authentik); the OIDC `sub` is the only cross-service join key. ---
 var isOpenApiBuild = Environment.GetCommandLineArgs()

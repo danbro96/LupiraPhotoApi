@@ -25,10 +25,18 @@ public static class PhotoEndpoints
             .WithName("ReprocessPhoto")
             .WithSummary("Re-queue a Ready or Failed asset through the processing pipeline.")
             .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
-        g.MapGet("/", (DateTimeOffset? from, DateTimeOffset? to, string? bbox, AssetKind? kind, AssetStatus? status, bool? located, string? place, string? sourceAlbum, PhotoSort? sort, int? limit, string? cursor, PhotosHandler h, CancellationToken ct) =>
-                h.ListAsync(from, to, bbox, kind, status, located, place, sourceAlbum, sort, limit, cursor, ct))
+        g.MapPost("/{id:guid}/trash", (Guid id, PhotosHandler h, CancellationToken ct) => h.TrashAsync(id, ct))
+            .WithName("TrashPhoto")
+            .WithSummary("Move an asset to the trash (idempotent). It keeps its bytes and status until restored or purged.")
+            .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
+        g.MapPost("/{id:guid}/restore", (Guid id, PhotosHandler h, CancellationToken ct) => h.RestoreAsync(id, ct))
+            .WithName("RestorePhoto")
+            .WithSummary("Take an asset back out of the trash (idempotent).")
+            .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
+        g.MapGet("/", (DateTimeOffset? from, DateTimeOffset? to, string? bbox, AssetKind? kind, AssetStatus? status, bool? located, string? place, string? sourceAlbum, bool? trashed, PhotoSort? sort, int? limit, string? cursor, PhotosHandler h, CancellationToken ct) =>
+                h.ListAsync(from, to, bbox, kind, status, located, place, sourceAlbum, trashed, sort, limit, cursor, ct))
             .WithName("ListPhotos")
-            .WithSummary("List assets (keyset-paged, newest taken first by default) with presigned thumbnail URLs.")
+            .WithSummary("List assets (keyset-paged, newest taken first by default) with presigned thumbnail URLs. trashed=true lists only the trash.")
             .Produces<PhotoListResponse>(StatusCodes.Status200OK);
         g.MapPost("/lookup", (LookupPhotosRequest body, PhotosHandler h, CancellationToken ct) => h.LookupAsync(body, ct))
             .WithName("LookupPhotos")
@@ -42,6 +50,10 @@ public static class PhotoEndpoints
             .WithName("ListPhotoAlbums")
             .WithSummary("Imported event folders and albums with their core date span, for linking to calendar events.")
             .Produces<List<PhotoAlbumDto>>(StatusCodes.Status200OK);
+        g.MapGet("/places", (string? q, int? limit, PhotosHandler h, CancellationToken ct) => h.PlacesAsync(q, limit, ct))
+            .WithName("ListPhotoPlaces")
+            .WithSummary("Place labels by asset count, most used first — suggestions for the place filter (q = substring).")
+            .Produces<List<PhotoPlaceCount>>(StatusCodes.Status200OK);
         g.MapGet("/map", (string bbox, DateTimeOffset? from, DateTimeOffset? to, PhotosHandler h, CancellationToken ct) => h.MapAsync(bbox, from, to, ct))
             .WithName("GetPhotoMap")
             .WithSummary("Geotagged Ready assets in a viewport as a GeoJSON FeatureCollection.")
@@ -56,7 +68,11 @@ public static class PhotoEndpoints
             .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
         g.MapDelete("/{id:guid}", (Guid id, PhotosHandler h, CancellationToken ct) => h.DeleteAsync(id, ct))
             .WithName("DeletePhoto")
-            .WithSummary("Delete an asset: objects first, then the document.")
+            .WithSummary("Delete an asset permanently, trashed or not: objects first, then the document.")
+            .Produces(StatusCodes.Status204NoContent);
+        g.MapDelete("/trash", (PhotosHandler h, CancellationToken ct) => h.EmptyTrashAsync(ct))
+            .WithName("EmptyPhotoTrash")
+            .WithSummary("Permanently delete every trashed asset.")
             .Produces(StatusCodes.Status204NoContent);
 
         return app;

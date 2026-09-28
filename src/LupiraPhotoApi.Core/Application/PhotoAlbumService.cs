@@ -13,7 +13,7 @@ public sealed class PhotoAlbumService(IQuerySession session)
     public async Task<List<PhotoAlbumDto>> ListAsync(Guid principalId, CancellationToken ct)
     {
         var rows = await session.Query<PhotoAsset>()
-            .Where(a => a.PrincipalId == principalId && a.SourceAlbum != null && a.Status != AssetStatus.Duplicate)
+            .Where(a => a.PrincipalId == principalId && a.SourceAlbum != null && a.Status != AssetStatus.Duplicate && a.TrashedAt == null)
             .Select(a => new AlbumRow
             {
                 Album = a.SourceAlbum!,

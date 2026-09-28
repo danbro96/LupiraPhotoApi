@@ -17,6 +17,8 @@ public sealed class PhotoOptions
 
     public int DeclaredExpiryDays { get; set; } = 7;
 
+    public int TrashRetentionDays { get; set; } = 30;
+
     public int ProcessingTickSeconds { get; set; } = 10;
 
     public int ProcessingBatchSize { get; set; } = 4;

@@ -42,5 +42,10 @@ public sealed class PhotoListItemDto
 
     public string? SourceAlbum { get; set; }
 
+    public DateTimeOffset? TrashedAt { get; set; }
+
+    /// <summary>When the trash is purged of it (<c>TrashedAt</c> + retention); null unless trashed.</summary>
+    public DateTimeOffset? PurgesAt { get; set; }
+
     public string? ThumbUrl { get; set; }
 }

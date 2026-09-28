@@ -3,24 +3,28 @@ using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Dtos.Photos;
 using Marten;
 using Marten.Linq.MatchesSql;
+using Microsoft.Extensions.Options;
 
 namespace LupiraPhotoApi.Core.Application;
 
-public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner presigner)
+public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner presigner, IOptions<PhotoOptions> options)
 {
     public const int DefaultLimit = 100;
     public const int MaxLimit = 500;
     public const int MapLimit = 2000;
     public const int LookupMax = 200;
 
+    private readonly TimeSpan _trashRetention = TimeSpan.FromDays(options.Value.TrashRetentionDays);
+
     public async Task<OpResult<PhotoListResponse>> ListAsync(
         Guid principalId, DateTimeOffset? from, DateTimeOffset? to, Bbox? bbox,
-        AssetKind? kind, AssetStatus? status, bool? located, string? place, string? sourceAlbum,
+        AssetKind? kind, AssetStatus? status, bool? located, string? place, string? sourceAlbum, bool? trashed,
         PhotoSort? sort, int? limit, string? cursor, CancellationToken ct)
     {
         var take = Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit);
         var order = sort ?? PhotoSort.TakenAtDesc;
         var query = session.Query<PhotoAsset>().Where(a => a.PrincipalId == principalId);
+        query = trashed == true ? query.Where(a => a.TrashedAt != null) : query.Where(a => a.TrashedAt == null);
         if (from is { } f) query = query.Where(a => a.TakenAt >= f);
         if (to is { } t) query = query.Where(a => a.TakenAt <= t);
         if (bbox is { } b)
@@ -70,7 +74,7 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
     }
 
     /// <summary>Hydrates a set of ids in one round trip — how a caller turns relation references (or any
-    /// other id list) into renderable items. Owner-scoped; unknown ids are simply absent.</summary>
+    /// other id list) into renderable items. Owner-scoped; unknown and trashed ids are simply absent.</summary>
     public async Task<OpResult<PhotoListResponse>> LookupAsync(Guid principalId, IReadOnlyList<Guid> ids, CancellationToken ct)
     {
         if (ids.Count > LookupMax)
@@ -79,7 +83,7 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
             return OpResult<PhotoListResponse>.Ok(new PhotoListResponse { Items = [] });
 
         var assets = await session.Query<PhotoAsset>()
-            .Where(a => a.PrincipalId == principalId && ids.Contains(a.Id))
+            .Where(a => a.PrincipalId == principalId && a.TrashedAt == null && ids.Contains(a.Id))
             .OrderByDescending(a => a.TakenAt)
             .ToListAsync(ct);
 
@@ -92,7 +96,7 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
         Guid principalId, Bbox bbox, DateTimeOffset? from, DateTimeOffset? to, CancellationToken ct)
     {
         var query = session.Query<PhotoAsset>()
-            .Where(a => a.PrincipalId == principalId && a.Status == AssetStatus.Ready)
+            .Where(a => a.PrincipalId == principalId && a.Status == AssetStatus.Ready && a.TrashedAt == null)
             .Where(a => a.Latitude >= bbox.MinLat && a.Latitude <= bbox.MaxLat
                      && a.Longitude >= bbox.MinLon && a.Longitude <= bbox.MaxLon);
         if (from is { } f) query = query.Where(a => a.TakenAt >= f);
@@ -148,6 +152,8 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
         CapturedByContactId = asset.CapturedByContactId,
         CapturedBySource = asset.CapturedBySource,
         SourceAlbum = asset.SourceAlbum,
+        TrashedAt = asset.TrashedAt,
+        PurgesAt = AssetTrash.PurgesAt(asset, _trashRetention),
         ThumbUrl = await presigner.ThumbUrlAsync(asset, ct),
     };
 }

@@ -27,11 +27,13 @@ public static class CoreServiceCollectionExtensions
             return opts;
         }).UseLightweightSessions();
 
+        services.AddMemoryCache();
         services.AddScoped<PrincipalDirectory>();
         services.AddScoped<PhotoDeclareService>();
         services.AddScoped<PhotoCompleteService>();
         services.AddScoped<PhotoQueryService>();
         services.AddScoped<PhotoDeleteService>();
+        services.AddScoped<PhotoTrashService>();
         services.AddScoped<PhotoStatsService>();
         services.AddScoped<PhotoCurationService>();
         services.AddScoped<PhotoAlbumService>();
