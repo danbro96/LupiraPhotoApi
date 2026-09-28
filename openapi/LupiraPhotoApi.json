@@ -166,6 +166,13 @@
             }
           },
           {
+            "name": "sourceAlbum",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "sort",
             "in": "query",
             "schema": {
@@ -463,6 +470,55 @@
         ]
       }
     },
+    "/photos/albums": {
+      "get": {
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Imported event folders and albums with their core date span, for linking to calendar events.",
+        "operationId": "ListPhotoAlbums",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoAlbumDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/photos/map": {
       "get": {
         "tags": [
@@ -601,6 +657,81 @@
           }
         ]
       },
+      "patch": {
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Hand-set metadata (the photographer); outranks anything derived.",
+        "operationId": "UpdatePhoto",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePhotoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoAssetDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      },
       "delete": {
         "tags": [
           "Photos"
@@ -663,6 +794,12 @@
   },
   "components": {
     "schemas": {
+      "AlbumKind": {
+        "enum": [
+          "Event",
+          "Theme"
+        ]
+      },
       "AssetKind": {
         "enum": [
           "Photo",
@@ -677,6 +814,71 @@
           "Ready",
           "Failed",
           "Duplicate"
+        ]
+      },
+      "CameraDto": {
+        "type": "object",
+        "properties": {
+          "make": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lens": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "focalLengthMm": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "fNumber": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "exposureSeconds": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "iso": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "software": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CapturedBySource": {
+        "enum": [
+          "CameraOwner",
+          "Folder",
+          "Uploader",
+          "Manual"
         ]
       },
       "DeclaredPhotoResponse": {
@@ -778,6 +980,14 @@
               "number"
             ],
             "format": "double"
+          },
+          "capturedByContactId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The photographer's contact — the phone sends its owner's own contact.",
+            "format": "uuid"
           }
         },
         "description": "Client-side MediaStore metadata for one asset. (DeviceId, MediaStoreId) under the caller is\n            the idempotency key — retrying a declare returns the same asset."
@@ -786,7 +996,8 @@
         "enum": [
           "None",
           "ExifGps",
-          "LocationHistory"
+          "LocationHistory",
+          "Folder"
         ]
       },
       "LookupPhotosRequest": {
@@ -828,6 +1039,77 @@
         },
         "description": "The resolved local identity of the caller."
       },
+      "PhotoAlbumDto": {
+        "required": [
+          "name",
+          "kind",
+          "count",
+          "outliers"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AlbumKind"
+          },
+          "source": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The import source (`handelser`, `takeout`, …); null for phone assets."
+          },
+          "folderDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The date the folder name carries, when it has one.",
+            "format": "date"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "coreFrom": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The densest run of exactly-dated capture days; null when no photo has an exact date.",
+            "format": "date"
+          },
+          "coreTo": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "outliers": {
+            "type": "integer",
+            "description": "Photos outside the core run, or dated only approximately.",
+            "format": "int32"
+          },
+          "centroidLatitude": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "centroidLongitude": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "One imported event folder or album, summarised for linking to a calendar event."
+      },
       "PhotoAssetDto": {
         "required": [
           "id",
@@ -837,7 +1119,8 @@
           "geotagSource",
           "contentType",
           "sizeBytes",
-          "createdAt"
+          "createdAt",
+          "takenAtSource"
         ],
         "type": "object",
         "properties": {
@@ -938,6 +1221,42 @@
             "description": "On a Duplicate only: the asset that holds the bytes.",
             "format": "uuid"
           },
+          "camera": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CameraDto"
+              }
+            ]
+          },
+          "takenAtSource": {
+            "$ref": "#/components/schemas/TakenAtSource"
+          },
+          "capturedByContactId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "capturedBySource": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CapturedBySource"
+              }
+            ]
+          },
+          "sourceAlbum": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "thumbUrl": {
             "type": [
               "null",
@@ -962,7 +1281,8 @@
           "takenAt",
           "geotagSource",
           "contentType",
-          "sizeBytes"
+          "sizeBytes",
+          "takenAtSource"
         ],
         "type": "object",
         "properties": {
@@ -1045,6 +1365,42 @@
             ],
             "description": "On a Duplicate only: the asset that holds the bytes.",
             "format": "uuid"
+          },
+          "camera": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CameraDto"
+              }
+            ]
+          },
+          "takenAtSource": {
+            "$ref": "#/components/schemas/TakenAtSource"
+          },
+          "capturedByContactId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "capturedBySource": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CapturedBySource"
+              }
+            ]
+          },
+          "sourceAlbum": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "thumbUrl": {
             "type": [
@@ -1185,7 +1541,8 @@
           "byKind",
           "byStatus",
           "byGeotagSource",
-          "byMonth"
+          "byMonth",
+          "byCamera"
         ],
         "type": "object",
         "properties": {
@@ -1224,6 +1581,14 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          "byCamera": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "\"Sony G8341\" → count; what the importer's camera map is built from."
           }
         }
       },
@@ -1269,6 +1634,35 @@
           }
         },
         "description": "RFC 9457 problem details."
+      },
+      "TakenAtSource": {
+        "enum": [
+          "Device",
+          "Exif",
+          "Sidecar",
+          "Filename",
+          "Folder",
+          "Album",
+          "Upload",
+          "FileTime"
+        ],
+        "description": "Where DateTimeOffset PhotoAsset.TakenAt came from. TakenAtSource.Device is first so documents\n            written before the field existed (phone backups) read as it."
+      },
+      "UpdatePhotoRequest": {
+        "required": [
+          "capturedByContactId"
+        ],
+        "type": "object",
+        "properties": {
+          "capturedByContactId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "Hand-set metadata. A null contact records the photographer as deliberately unknown."
       }
     },
     "securitySchemes": {

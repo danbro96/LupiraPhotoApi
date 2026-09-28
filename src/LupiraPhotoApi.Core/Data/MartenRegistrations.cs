@@ -31,7 +31,9 @@ public static class MartenRegistrations
             // exact check is a Sha256 lookup, and DuplicateOfId carries the delete cascade.
             .Duplicate(x => x.SizeBytes)
             .Duplicate(x => x.Sha256!)
-            .Duplicate(x => x.DuplicateOfId!);
+            .Duplicate(x => x.DuplicateOfId!)
+            // Albums review groups by it, and the gallery filters on it.
+            .Duplicate(x => x.SourceAlbum!);
 
         return opts;
     }

@@ -15,7 +15,7 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
 
     public async Task<OpResult<PhotoListResponse>> ListAsync(
         Guid principalId, DateTimeOffset? from, DateTimeOffset? to, Bbox? bbox,
-        AssetKind? kind, AssetStatus? status, bool? located, string? place,
+        AssetKind? kind, AssetStatus? status, bool? located, string? place, string? sourceAlbum,
         PhotoSort? sort, int? limit, string? cursor, CancellationToken ct)
     {
         var take = Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit);
@@ -36,6 +36,8 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
             query = geotagged ? query.Where(a => a.Latitude != null) : query.Where(a => a.Latitude == null);
         if (!string.IsNullOrWhiteSpace(place))
             query = query.Where(a => a.PlaceLabel != null && a.PlaceLabel.Contains(place, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(sourceAlbum))
+            query = query.Where(a => a.SourceAlbum == sourceAlbum);
 
         if (cursor is not null)
         {
@@ -141,6 +143,11 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
         SizeBytes = asset.SizeBytes,
         LastError = asset.LastError,
         DuplicateOfId = asset.DuplicateOfId,
+        Camera = DtoMapping.Camera(asset.Camera),
+        TakenAtSource = asset.TakenAtSource,
+        CapturedByContactId = asset.CapturedByContactId,
+        CapturedBySource = asset.CapturedBySource,
+        SourceAlbum = asset.SourceAlbum,
         ThumbUrl = await presigner.ThumbUrlAsync(asset, ct),
     };
 }

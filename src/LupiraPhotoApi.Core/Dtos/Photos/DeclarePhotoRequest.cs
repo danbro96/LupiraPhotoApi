@@ -23,4 +23,7 @@ public sealed class DeclarePhotoRequest
     public int? Height { get; set; }
 
     public double? DurationSeconds { get; set; }
+
+    /// <summary>The photographer's contact — the phone sends its owner's own contact.</summary>
+    public Guid? CapturedByContactId { get; set; }
 }

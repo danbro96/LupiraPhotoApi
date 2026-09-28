@@ -32,5 +32,15 @@ public sealed class PhotoListItemDto
     /// <summary>On a Duplicate only: the asset that holds the bytes.</summary>
     public Guid? DuplicateOfId { get; set; }
 
+    public CameraDto? Camera { get; set; }
+
+    public required TakenAtSource TakenAtSource { get; set; }
+
+    public Guid? CapturedByContactId { get; set; }
+
+    public CapturedBySource? CapturedBySource { get; set; }
+
+    public string? SourceAlbum { get; set; }
+
     public string? ThumbUrl { get; set; }
 }

@@ -25,13 +25,15 @@ public class GeotagSelectionTests
     private static PhotoProcessingService Service(
         string? reverseLabel = null,
         LocationHistoryHit? historyHit = null,
-        FakeObjectStore? store = null) =>
+        FakeObjectStore? store = null,
+        MediaMetadata? file = null) =>
         new(
             store ?? new FakeObjectStore(),
             new FakeThumbnailer(),
             new FakeThumbnailer(),
             new FakeGeocoder(reverseLabel),
             new FakeHistory(historyHit),
+            new FakeMetadata(file ?? MediaMetadata.Empty),
             NullLogger<PhotoProcessingService>.Instance);
 
     [Fact]
@@ -91,6 +93,60 @@ public class GeotagSelectionTests
         Assert.True(store.Objects.ContainsKey(asset.ThumbKey!));
         Assert.Equal(640, asset.Width);
         Assert.Equal(480, asset.Height);
+    }
+
+    [Fact]
+    public async Task FileGps_BeatsAFolderHint_ButKeepsItsCuratedLabel()
+    {
+        var asset = Asset();
+        asset.PlaceHint = new PlaceHint { Source = PlaceHintSource.Folder, Latitude = 59.0, Longitude = 18.0, Label = "Armégatan 32B" };
+        await Service(reverseLabel: "Solna", file: new MediaMetadata { Latitude = 59.35, Longitude = 18.00 })
+            .ProcessAsync(asset, "sub-1", CancellationToken.None);
+
+        Assert.Equal(GeotagSource.ExifGps, asset.GeotagSource);
+        Assert.Equal(59.35, asset.Latitude);
+        Assert.Equal("Armégatan 32B", asset.PlaceLabel);
+    }
+
+    [Fact]
+    public async Task FolderHint_FillsAPhotoWithoutGps_AndBeatsLocationHistory()
+    {
+        var asset = Asset();
+        asset.PlaceHint = new PlaceHint { Source = PlaceHintSource.Folder, Latitude = 56.83, Longitude = 13.94, Label = "Skolgatan 18" };
+        await Service(historyHit: new LocationHistoryHit { Latitude = 1, Longitude = 1, Label = "Wrong" })
+            .ProcessAsync(asset, "sub-1", CancellationToken.None);
+
+        Assert.Equal(GeotagSource.Folder, asset.GeotagSource);
+        Assert.Equal(56.83, asset.Latitude);
+        Assert.Equal("Skolgatan 18", asset.PlaceLabel);
+    }
+
+    [Fact]
+    public async Task LabelOnlyHint_KeepsHistoryCoordinates()
+    {
+        var asset = Asset();
+        asset.PlaceHint = new PlaceHint { Source = PlaceHintSource.Folder, Label = "Hammarby Sjöstad" };
+        await Service(historyHit: new LocationHistoryHit { Latitude = 59.30, Longitude = 18.10, Label = "Home" })
+            .ProcessAsync(asset, "sub-1", CancellationToken.None);
+
+        Assert.Equal(GeotagSource.LocationHistory, asset.GeotagSource);
+        Assert.Equal("Hammarby Sjöstad", asset.PlaceLabel);
+    }
+
+    [Fact]
+    public async Task Camera_ComesFromTheFile()
+    {
+        var asset = Asset();
+        await Service(file: new MediaMetadata { Camera = new CameraInfo { Make = "Sony", Model = "G8341" } })
+            .ProcessAsync(asset, "sub-1", CancellationToken.None);
+
+        Assert.Equal("G8341", asset.Camera?.Model);
+    }
+
+    private sealed class FakeMetadata(MediaMetadata metadata) : IMediaMetadataReader
+    {
+        public Task<MediaMetadata> ReadAsync(string path, AssetKind kind, CancellationToken ct = default) =>
+            Task.FromResult(metadata);
     }
 
     private sealed class FakeThumbnailer : IPhotoThumbnailer, IVideoThumbnailer

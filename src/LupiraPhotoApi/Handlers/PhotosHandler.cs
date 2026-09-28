@@ -13,7 +13,9 @@ public sealed class PhotosHandler(
     PhotoCompleteService completeService,
     PhotoQueryService queryService,
     PhotoStatsService statsService,
-    PhotoDeleteService deleteService)
+    PhotoDeleteService deleteService,
+    PhotoCurationService curationService,
+    PhotoAlbumService albumService)
 {
     public async Task<Results<Ok<DeclaredPhotoResponse>, ProblemHttpResult, UnauthorizedHttpResult>> DeclareAsync(
         DeclarePhotoRequest request, CancellationToken ct)
@@ -38,7 +40,7 @@ public sealed class PhotosHandler(
 
     public async Task<Results<Ok<PhotoListResponse>, ProblemHttpResult, UnauthorizedHttpResult>> ListAsync(
         DateTimeOffset? from, DateTimeOffset? to, string? bbox, AssetKind? kind, AssetStatus? status,
-        bool? located, string? place, PhotoSort? sort, int? limit, string? cursor, CancellationToken ct)
+        bool? located, string? place, string? sourceAlbum, PhotoSort? sort, int? limit, string? cursor, CancellationToken ct)
     {
         Bbox? parsed = null;
         if (bbox is not null)
@@ -50,7 +52,7 @@ public sealed class PhotosHandler(
 
         var u = await user.GetAsync(ct);
         return OpResultMap.OkProblem(
-            await queryService.ListAsync(u.Id, from, to, parsed, kind, status, located, place, sort, limit, cursor, ct));
+            await queryService.ListAsync(u.Id, from, to, parsed, kind, status, located, place, sourceAlbum, sort, limit, cursor, ct));
     }
 
     public async Task<Results<Ok<PhotoListResponse>, ProblemHttpResult, UnauthorizedHttpResult>> LookupAsync(
@@ -87,5 +89,18 @@ public sealed class PhotosHandler(
     {
         var u = await user.GetAsync(ct);
         return OpResultMap.NoContentNotFoundProblem(await deleteService.DeleteAsync(u.Id, id, ct));
+    }
+
+    public async Task<Results<Ok<PhotoAssetDto>, NotFound, ProblemHttpResult, UnauthorizedHttpResult>> UpdateAsync(
+        Guid id, UpdatePhotoRequest request, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return OpResultMap.OkNotFoundProblem(await curationService.UpdateAsync(u.Id, id, request, ct));
+    }
+
+    public async Task<Results<Ok<List<PhotoAlbumDto>>, UnauthorizedHttpResult>> AlbumsAsync(CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return TypedResults.Ok(await albumService.ListAsync(u.Id, ct));
     }
 }

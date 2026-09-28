@@ -3,8 +3,10 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LupiraPhotoApi.Auth;
+using LupiraPhotoApi.Cli;
 using LupiraPhotoApi.Clients;
 using LupiraPhotoApi.Core.Application;
+using LupiraPhotoApi.Core.Application.Import;
 using LupiraPhotoApi.Core.Application.Processing;
 using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Storage;
@@ -38,6 +40,7 @@ builder.Services.AddSingleton<IObjectStore, S3ObjectStore>();
 builder.Services.AddSingleton<FfmpegVideoThumbnailer>();
 builder.Services.AddSingleton<IVideoThumbnailer>(sp => sp.GetRequiredService<FfmpegVideoThumbnailer>());
 builder.Services.AddSingleton<IPhotoThumbnailer, MagickThumbnailer>();
+builder.Services.AddSingleton<IMediaMetadataReader, MediaMetadataReader>();
 
 builder.Services.Configure<ServiceAuthOptions>(builder.Configuration.GetSection(ServiceAuthOptions.SectionName));
 builder.Services.Configure<GeoApiOptions>(builder.Configuration.GetSection(GeoApiOptions.SectionName));
@@ -45,6 +48,8 @@ builder.Services.Configure<LocationApiOptions>(builder.Configuration.GetSection(
 builder.Services.AddHttpClient(nameof(ServiceTokenProvider));
 builder.Services.AddSingleton<ServiceTokenProvider>();
 builder.Services.AddHttpClient<IReverseGeocoder, GeoReverseClient>((sp, http) =>
+    http.BaseAddress = new Uri(sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<GeoApiOptions>>().Value.BaseUrl));
+builder.Services.AddHttpClient<IPlaceResolver, GeoPlaceClient>((sp, http) =>
     http.BaseAddress = new Uri(sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<GeoApiOptions>>().Value.BaseUrl));
 builder.Services.AddHttpClient<ILocationHistoryClient, LocationInternalClient>((sp, http) =>
     http.BaseAddress = new Uri(sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<LocationApiOptions>>().Value.BaseUrl));
@@ -264,6 +269,13 @@ if (args.Contains("--apply-schema"))
     await store.Storage.ApplyAllConfiguredChangesToDatabaseAsync();
     await app.Services.GetRequiredService<IObjectStore>().EnsureBucketAsync();
     Console.WriteLine("Schema applied.");
+    return;
+}
+
+// Import and maintenance commands, run with `docker exec` inside the live container (see CliCommands).
+if (CliCommands.Handles(args))
+{
+    Environment.ExitCode = await CliCommands.RunAsync(app.Services, args);
     return;
 }
 

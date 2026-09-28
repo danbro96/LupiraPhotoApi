@@ -13,11 +13,23 @@ public static class ObjectKeys
         ["image/heif"] = ("heif", AssetKind.Photo),
         ["image/gif"] = ("gif", AssetKind.Photo),
         ["image/avif"] = ("avif", AssetKind.Photo),
+        ["image/x-nikon-nef"] = ("nef", AssetKind.Photo),
         ["video/mp4"] = ("mp4", AssetKind.Video),
         ["video/quicktime"] = ("mov", AssetKind.Video),
         ["video/webm"] = ("webm", AssetKind.Video),
         ["video/x-matroska"] = ("mkv", AssetKind.Video),
         ["video/3gpp"] = ("3gp", AssetKind.Video),
+        ["video/x-msvideo"] = ("avi", AssetKind.Video),
+        ["video/mpeg"] = ("mpg", AssetKind.Video),
+        ["video/mp2t"] = ("m2ts", AssetKind.Video),
+    };
+
+    private static readonly Dictionary<string, string> ExtensionAliases = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["jpeg"] = "jpg",
+        ["jpe"] = "jpg",
+        ["mpeg"] = "mpg",
+        ["mts"] = "m2ts",
     };
 
     public static bool TryResolve(string contentType, out string extension, out AssetKind kind)
@@ -30,6 +42,25 @@ public static class ObjectKeys
 
         extension = string.Empty;
         kind = default;
+        return false;
+    }
+
+    /// <summary>File extension (with or without the dot) → the whitelisted content type, for importers
+    /// that have a file rather than a MediaStore mime type.</summary>
+    public static bool TryResolveExtension(string extension, out string contentType)
+    {
+        var ext = extension.TrimStart('.');
+        if (ExtensionAliases.TryGetValue(ext, out var canonical)) ext = canonical;
+        foreach (var (type, entry) in ContentTypes)
+        {
+            if (string.Equals(entry.Ext, ext, StringComparison.OrdinalIgnoreCase))
+            {
+                contentType = type;
+                return true;
+            }
+        }
+
+        contentType = string.Empty;
         return false;
     }
 

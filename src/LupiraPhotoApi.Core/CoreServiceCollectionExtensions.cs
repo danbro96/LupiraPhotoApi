@@ -33,6 +33,10 @@ public static class CoreServiceCollectionExtensions
         services.AddScoped<PhotoQueryService>();
         services.AddScoped<PhotoDeleteService>();
         services.AddScoped<PhotoStatsService>();
+        services.AddScoped<PhotoCurationService>();
+        services.AddScoped<PhotoAlbumService>();
+        services.AddScoped<PhotoMaintenanceService>();
+        services.AddScoped<LupiraPhotoApi.Core.Application.Import.PhotoImporter>();
         services.AddScoped<PhotoPresigner>();
         services.AddScoped<PhotoProcessingService>();
         return services;

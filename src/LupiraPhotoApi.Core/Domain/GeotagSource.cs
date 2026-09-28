@@ -5,4 +5,7 @@ public enum GeotagSource
     None,
     ExifGps,
     LocationHistory,
+
+    /// <summary>From an import folder's place — assumed, not measured.</summary>
+    Folder,
 }

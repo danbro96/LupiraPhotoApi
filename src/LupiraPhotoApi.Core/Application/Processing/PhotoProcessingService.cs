@@ -15,6 +15,7 @@ public sealed class PhotoProcessingService(
     IVideoThumbnailer videoThumbnailer,
     IReverseGeocoder reverseGeocoder,
     ILocationHistoryClient locationHistory,
+    IMediaMetadataReader metadataReader,
     ILogger<PhotoProcessingService> logger)
 {
     public async Task ProcessAsync(PhotoAsset asset, string authentikSub, CancellationToken ct)
@@ -44,7 +45,9 @@ public sealed class PhotoProcessingService(
             asset.Width ??= thumb.SourceWidth;
             asset.Height ??= thumb.SourceHeight;
 
-            await GeotagAsync(asset, authentikSub, ct);
+            var metadata = await metadataReader.ReadAsync(tempPath, asset.Kind, ct);
+            if (metadata.Camera is { } camera) asset.Camera = camera;
+            await GeotagAsync(asset, metadata, authentikSub, ct);
         }
         finally
         {
@@ -58,27 +61,44 @@ public sealed class PhotoProcessingService(
         }
     }
 
-    private async Task GeotagAsync(PhotoAsset asset, string authentikSub, CancellationToken ct)
+    /// <summary>File EXIF GPS → the declared hint (phone coordinates or an import folder) → the owner's
+    /// location history → none. A hint's curated label beats reverse geocoding.</summary>
+    private async Task GeotagAsync(PhotoAsset asset, MediaMetadata metadata, string authentikSub, CancellationToken ct)
     {
-        if (asset is { Latitude: not null, Longitude: not null })
+        var hint = asset.PlaceHint ?? LegacyDeviceHint(asset);
+        string? label = null;
+
+        if (metadata is { Latitude: { } fileLat, Longitude: { } fileLon })
         {
-            // Client-supplied EXIF GPS wins; the label is decoration on top of exact coordinates.
-            asset.GeotagSource = GeotagSource.ExifGps;
-            asset.PlaceLabel = await reverseGeocoder.ReverseLabelAsync(asset.Latitude.Value, asset.Longitude.Value, ct);
-            return;
+            (asset.Latitude, asset.Longitude, asset.GeotagSource) = (fileLat, fileLon, GeotagSource.ExifGps);
+        }
+        else if (hint is { Latitude: { } hintLat, Longitude: { } hintLon })
+        {
+            var source = hint.Source == PlaceHintSource.Folder ? GeotagSource.Folder : GeotagSource.ExifGps;
+            (asset.Latitude, asset.Longitude, asset.GeotagSource) = (hintLat, hintLon, source);
+        }
+        else if (await locationHistory.PlaceAtAsync(authentikSub, asset.TakenAt, ct) is { } hit)
+        {
+            (asset.Latitude, asset.Longitude, asset.GeotagSource) = (hit.Latitude, hit.Longitude, GeotagSource.LocationHistory);
+            label = hit.Label;
+            logger.LogDebug("Asset {AssetId} geotagged from location history.", asset.Id);
+        }
+        else
+        {
+            (asset.Latitude, asset.Longitude, asset.GeotagSource) = (null, null, GeotagSource.None);
         }
 
-        var hit = await locationHistory.PlaceAtAsync(authentikSub, asset.TakenAt, ct);
-        if (hit is null)
-        {
-            asset.GeotagSource = GeotagSource.None;
-            return;
-        }
-
-        asset.Latitude = hit.Latitude;
-        asset.Longitude = hit.Longitude;
-        asset.PlaceLabel = hit.Label;
-        asset.GeotagSource = GeotagSource.LocationHistory;
-        logger.LogDebug("Asset {AssetId} geotagged from location history.", asset.Id);
+        if (hint?.Label is { } curated)
+            label = curated;
+        else if (asset.GeotagSource is GeotagSource.ExifGps or GeotagSource.Folder)
+            label = await reverseGeocoder.ReverseLabelAsync(asset.Latitude!.Value, asset.Longitude!.Value, ct);
+        asset.PlaceLabel = label;
     }
+
+    /// <summary>Phone assets declared before <see cref="PhotoAsset.PlaceHint"/> existed carry their MediaStore
+    /// coordinates only in Latitude/Longitude.</summary>
+    private static PlaceHint? LegacyDeviceHint(PhotoAsset asset) =>
+        asset is { Latitude: not null, Longitude: not null, GeotagSource: GeotagSource.None or GeotagSource.ExifGps }
+            ? new PlaceHint { Source = PlaceHintSource.Device, Latitude = asset.Latitude, Longitude = asset.Longitude }
+            : null;
 }

@@ -25,8 +25,8 @@ public static class PhotoEndpoints
             .WithName("ReprocessPhoto")
             .WithSummary("Re-queue a Ready or Failed asset through the processing pipeline.")
             .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
-        g.MapGet("/", (DateTimeOffset? from, DateTimeOffset? to, string? bbox, AssetKind? kind, AssetStatus? status, bool? located, string? place, PhotoSort? sort, int? limit, string? cursor, PhotosHandler h, CancellationToken ct) =>
-                h.ListAsync(from, to, bbox, kind, status, located, place, sort, limit, cursor, ct))
+        g.MapGet("/", (DateTimeOffset? from, DateTimeOffset? to, string? bbox, AssetKind? kind, AssetStatus? status, bool? located, string? place, string? sourceAlbum, PhotoSort? sort, int? limit, string? cursor, PhotosHandler h, CancellationToken ct) =>
+                h.ListAsync(from, to, bbox, kind, status, located, place, sourceAlbum, sort, limit, cursor, ct))
             .WithName("ListPhotos")
             .WithSummary("List assets (keyset-paged, newest taken first by default) with presigned thumbnail URLs.")
             .Produces<PhotoListResponse>(StatusCodes.Status200OK);
@@ -38,6 +38,10 @@ public static class PhotoEndpoints
             .WithName("GetPhotoStats")
             .WithSummary("Library totals and counts by kind, status, geotag source and month.")
             .Produces<PhotoStats>(StatusCodes.Status200OK);
+        g.MapGet("/albums", (PhotosHandler h, CancellationToken ct) => h.AlbumsAsync(ct))
+            .WithName("ListPhotoAlbums")
+            .WithSummary("Imported event folders and albums with their core date span, for linking to calendar events.")
+            .Produces<List<PhotoAlbumDto>>(StatusCodes.Status200OK);
         g.MapGet("/map", (string bbox, DateTimeOffset? from, DateTimeOffset? to, PhotosHandler h, CancellationToken ct) => h.MapAsync(bbox, from, to, ct))
             .WithName("GetPhotoMap")
             .WithSummary("Geotagged Ready assets in a viewport as a GeoJSON FeatureCollection.")
@@ -45,6 +49,10 @@ public static class PhotoEndpoints
         g.MapGet("/{id:guid}", (Guid id, PhotosHandler h, CancellationToken ct) => h.GetAsync(id, ct))
             .WithName("GetPhoto")
             .WithSummary("One asset with presigned original + thumbnail URLs.")
+            .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
+        g.MapPatch("/{id:guid}", (Guid id, UpdatePhotoRequest body, PhotosHandler h, CancellationToken ct) => h.UpdateAsync(id, body, ct))
+            .WithName("UpdatePhoto")
+            .WithSummary("Hand-set metadata (the photographer); outranks anything derived.")
             .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
         g.MapDelete("/{id:guid}", (Guid id, PhotosHandler h, CancellationToken ct) => h.DeleteAsync(id, ct))
             .WithName("DeletePhoto")

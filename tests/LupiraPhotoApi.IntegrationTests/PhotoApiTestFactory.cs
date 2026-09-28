@@ -26,6 +26,8 @@ public sealed class PhotoApiTestFactory : WebApplicationFactory<Program>
     public FakeReverseGeocoder Geo { get; } = new();
     public FakeLocationHistory History { get; } = new();
 
+    public FakePlaceResolver Places { get; } = new();
+
     public PhotoApiTestFactory() => _postgres.StartAsync().GetAwaiter().GetResult();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -48,6 +50,8 @@ public sealed class PhotoApiTestFactory : WebApplicationFactory<Program>
             services.Replace(ServiceDescriptor.Singleton<IReverseGeocoder>(Geo));
             services.Replace(ServiceDescriptor.Singleton<ILocationHistoryClient>(History));
             services.Replace(ServiceDescriptor.Singleton<IVideoThumbnailer>(new StubVideoThumbnailer()));
+            services.RemoveAll<LupiraPhotoApi.Core.Application.Import.IPlaceResolver>();
+            services.AddSingleton<LupiraPhotoApi.Core.Application.Import.IPlaceResolver>(Places);
         });
     }
 
@@ -64,6 +68,7 @@ public sealed class PhotoApiTestFactory : WebApplicationFactory<Program>
         S3.Objects.Clear();
         Geo.Label = "Testville";
         History.Hit = null;
+        Places.Known.Clear();
     }
 
     public HttpClient ApiClient(string email)

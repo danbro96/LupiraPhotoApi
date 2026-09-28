@@ -32,6 +32,11 @@ public sealed class PhotoPresigner(IObjectStore store, IOptions<PhotoOptions> op
             ProcessedAt = asset.ProcessedAt,
             LastError = asset.LastError,
             DuplicateOfId = asset.DuplicateOfId,
+            Camera = DtoMapping.Camera(asset.Camera),
+            TakenAtSource = asset.TakenAtSource,
+            CapturedByContactId = asset.CapturedByContactId,
+            CapturedBySource = asset.CapturedBySource,
+            SourceAlbum = asset.SourceAlbum,
             ThumbUrl = await ThumbUrlAsync(asset, ct),
             OriginalUrl = includeOriginal && asset.Status != AssetStatus.Declared
                 ? (await store.PresignGetAsync(asset.OriginalKey, TimeSpan.FromMinutes(_opts.OriginalGetExpiryMinutes), ct)).ToString()

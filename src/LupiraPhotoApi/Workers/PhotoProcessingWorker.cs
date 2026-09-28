@@ -117,6 +117,7 @@ public sealed class PhotoProcessingWorker(
 
         await store.DeleteAsync(asset.OriginalKey, ct);
         if (thumbKey is not null) await store.DeleteAsync(thumbKey, ct);
+        if (MetadataDonation.Apply(canonical, asset)) session.Store(canonical);
         return true;
     }
 
