@@ -16,6 +16,9 @@ public sealed class ImportReport
 
     public int Duplicates { get; set; }
 
+    /// <summary>The share of <see cref="Duplicates"/> caught by <see cref="NearCopyIndex"/>.</summary>
+    public int NearCopies { get; set; }
+
     public Dictionary<string, int> ByKind { get; } = [];
 
     public Dictionary<string, int> Unsupported { get; } = [];
@@ -51,7 +54,7 @@ public sealed class ImportReport
     {
         var sb = new StringBuilder();
         sb.AppendLine(DryRun ? "== DRY RUN — nothing written ==" : "== Import ==");
-        sb.AppendLine($"files {Files}  imported {Imported}  already present {AlreadyPresent}  duplicates {Duplicates}  skipped {Skipped}");
+        sb.AppendLine($"files {Files}  imported {Imported}  already present {AlreadyPresent}  duplicates {Duplicates}{(NearCopies > 0 ? $" ({NearCopies} re-encoded)" : string.Empty)}  skipped {Skipped}");
         Section(sb, "by kind", ByKind.Select(kv => $"{kv.Key}: {kv.Value}"));
         Section(sb, "unsupported", Unsupported.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key}: {kv.Value}"));
         Section(sb, "capture time from", CaptureSources.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}: {kv.Value}"));

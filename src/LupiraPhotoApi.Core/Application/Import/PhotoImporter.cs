@@ -42,7 +42,14 @@ public sealed partial class PhotoImporter(
         var files = await ScanAsync(request, titles, report, ct);
         ResolveCaptureTimes(request, files, report);
         await ResolvePlacesAsync(request, files, report, ct);
-        if (request.Source == ImportSource.Takeout) await AdoptAlbumsAsync(request, files, report, ct);
+        if (request.Source == ImportSource.Takeout)
+        {
+            var index = await NearCopyIndex.LoadAsync(session, request.PrincipalId, ct);
+            foreach (var file in files)
+                file.NearCopy = index.Find(file.Kind, file.Relative, file.Capture!.TakenAt, file.SizeBytes);
+            await AdoptAlbumsAsync(request, files, report, ct);
+        }
+
         ResolvePhotographers(request, files, report);
         SummariseAlbums(files, report);
 
@@ -249,19 +256,22 @@ public sealed partial class PhotoImporter(
     {
         foreach (var album in files.Where(f => f.Album is not null).GroupBy(f => f.Album!).ToList())
         {
-            var votes = new Dictionary<string, (int Count, PhotoAsset Canonical)>(StringComparer.Ordinal);
+            var votes = new Dictionary<string, (int Count, AlbumKind? Kind, DateOnly? Date)>(StringComparer.Ordinal);
             foreach (var file in album)
             {
-                if (await FindCanonicalAsync(request.PrincipalId, file, ct) is not { SourceAlbum: { } existing } canonical) continue;
-                var current = votes.GetValueOrDefault(existing);
-                votes[existing] = (current.Count + 1, canonical);
+                var canonical = await FindCanonicalAsync(request.PrincipalId, file, ct);
+                var (existing, kind, date) = canonical is { SourceAlbum: not null }
+                    ? (canonical.SourceAlbum, canonical.SourceAlbumKind, canonical.SourceAlbumDate)
+                    : (file.NearCopy?.SourceAlbum, file.NearCopy?.SourceAlbumKind, file.NearCopy?.SourceAlbumDate);
+                if (existing is null) continue;
+                votes[existing] = (votes.GetValueOrDefault(existing).Count + 1, kind, date);
             }
 
             if (votes.Count == 0) continue;
-            var (winner, (count, sample)) = votes.MaxBy(kv => kv.Value.Count);
+            var (winner, (count, winnerKind, winnerDate)) = votes.MaxBy(kv => kv.Value.Count);
             if (count * 2 <= album.Count() || winner == album.Key) continue;
             foreach (var file in album)
-                (file.Album, file.AlbumKind, file.AlbumDate) = (winner, sample.SourceAlbumKind ?? AlbumKind.Event, sample.SourceAlbumDate);
+                (file.Album, file.AlbumKind, file.AlbumDate) = (winner, winnerKind ?? AlbumKind.Event, winnerDate);
             report.Albums.Add($"Takeout album \"{album.Key}\" folded into \"{winner}\" ({count}/{album.Count()} already there)");
         }
     }
@@ -352,7 +362,14 @@ public sealed partial class PhotoImporter(
         {
             var key = (file.Capture!.TakenAt, file.SizeBytes, file.ContentType);
             if (!seen.Add(key) || await FindCanonicalAsync(request.PrincipalId, file, ct) is not null)
+            {
                 report.Duplicates++;
+            }
+            else if (file.NearCopy is not null)
+            {
+                report.Duplicates++;
+                report.NearCopies++;
+            }
         }
     }
 
@@ -409,6 +426,8 @@ public sealed partial class PhotoImporter(
             SourceAlbumKind = file.Album is null ? null : file.AlbumKind,
             SourceAlbumDate = file.Album is null ? null : file.AlbumDate,
         };
+        if (file.NearCopy is not null && await FindCanonicalAsync(request.PrincipalId, file, ct) is null)
+            facts.DuplicateOfId = file.NearCopy.CanonicalId;
 
         var declared = await declareService.DeclareAsync(request.PrincipalId, declare, facts, ct);
         if (!declared.IsOk)
@@ -421,6 +440,7 @@ public sealed partial class PhotoImporter(
         {
             case AssetStatus.Duplicate:
                 report.Duplicates++;
+                if (facts.DuplicateOfId is not null) report.NearCopies++;
                 return;
             case not AssetStatus.Declared:
                 report.AlreadyPresent++;
@@ -482,6 +502,8 @@ public sealed partial class PhotoImporter(
         public CaptureDecision? Capture { get; set; }
 
         public PlaceHint? PlaceHint { get; set; }
+
+        public NearCopy? NearCopy { get; set; }
 
         public Guid? CapturedBy { get; set; }
 

@@ -35,7 +35,7 @@ public sealed class PhotoDeclareService(IDocumentSession session, IObjectStore s
         var asset = await session.LoadAsync<PhotoAsset>(id, ct);
         if (asset is null)
         {
-            var canonical = await FindCanonicalAsync(principalId, id, req, ct);
+            var canonical = await FindCanonicalAsync(principalId, id, req, ct) ?? import?.DuplicateOfId;
             asset = new PhotoAsset
             {
                 Id = id,

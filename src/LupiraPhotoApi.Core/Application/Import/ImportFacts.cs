@@ -19,4 +19,7 @@ public sealed class ImportFacts
     public AlbumKind? SourceAlbumKind { get; set; }
 
     public DateOnly? SourceAlbumDate { get; set; }
+
+    /// <summary>A canonical the importer matched itself — a re-encoded copy the byte-level surrogate can't see.</summary>
+    public Guid? DuplicateOfId { get; set; }
 }

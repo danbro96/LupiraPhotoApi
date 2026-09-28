@@ -117,6 +117,27 @@ public class ImportTests(PhotoApiTestFactory factory) : IntegrationTest(factory)
     }
 
     [Fact]
+    public async Task Takeout_ReEncodedCopies_CollapseOntoTheOriginal_AndFoldTheirAlbum()
+    {
+        Write("2016-08-01 Fjällvandring Sarek/P1010746.JPG", Jpeg(exifTaken: "2016:08:03 13:31:08", make: "Panasonic", model: "DMC-TZ60"));
+        Write("2016-08-01 Fjällvandring Sarek/P1010747.JPG", Jpeg(exifTaken: "2016:08:03 13:40:00", make: "Panasonic", model: "DMC-TZ60"));
+        await ImportAsync(ImportSource.Handelser, map: string.Empty);
+        var originals = await AssetsAsync();
+        Directory.Delete(Path.Combine(_root, "2016-08-01 Fjällvandring Sarek"), recursive: true);
+
+        Write("Vandring i sarek/P1010746.JPG", Jpeg(exifTaken: "2016:08:03 13:31:08"));
+        Write("Vandring i sarek/P1010747(1).JPG", Jpeg(exifTaken: "2016:08:03 13:40:00"));
+        Write("Photos from 2021/P1010746.JPG", Jpeg(exifTaken: "2021:07:19 10:00:00"));
+
+        var report = await ImportAsync(ImportSource.Takeout, map: string.Empty);
+
+        Assert.Equal((2, 2, 1), (report.Duplicates, report.NearCopies, report.Imported));
+        Assert.Contains(report.Albums, a => a.Contains("folded into \"2016-08-01 Fjällvandring Sarek\"", StringComparison.Ordinal));
+        var copies = (await AssetsAsync()).Where(a => a.DeviceId == "import:takeout" && a.Status == AssetStatus.Duplicate).ToList();
+        Assert.Equal(originals.Select(o => o.Id).Order(), copies.Select(c => c.DuplicateOfId!.Value).Order());
+    }
+
+    [Fact]
     public async Task PlaceFolders_LendTheirOwnGpsToPhotosWithout()
     {
         Write("Armégatan 32B/a.jpg", Jpeg(exifTaken: "2018:01:01 12:00:00", lat: 59.3500, lon: 18.0036));
