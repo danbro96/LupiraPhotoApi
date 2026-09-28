@@ -17,7 +17,7 @@
     <!-- The bounded context: Domain (identity, photo assets, key scheme, lifecycle), Application (services +
          OpResult), Dtos, and the vendor-neutral IObjectStore seam. Bytes live in the object store; Marten holds
          only asset documents on the `photo` schema. No ASP.NET dependency — that lives in the host. -->
-    <PackageReference Include="Marten" Version="9.10.0" />
+    <PackageReference Include="Marten" Version="9.40.0" />
   </ItemGroup>
 
 </Project>
