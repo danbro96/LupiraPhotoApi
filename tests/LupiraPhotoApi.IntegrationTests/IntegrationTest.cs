@@ -106,6 +106,16 @@ public abstract class IntegrationTest(PhotoApiTestFactory factory) : IAsyncLifet
         CreatedAt = DateTimeOffset.UtcNow,
     };
 
+    protected static PhotoAsset Located(Guid owner, double lat, double lon, DateTimeOffset takenAt, GeotagSource source = GeotagSource.ExifGps)
+    {
+        var asset = Seeded(owner);
+        asset.Latitude = lat;
+        asset.Longitude = lon;
+        asset.GeotagSource = source;
+        asset.TakenAt = takenAt;
+        return asset;
+    }
+
     /// <summary>Polls the asset until the background worker lands it on <paramref name="status"/>.</summary>
     protected static async Task<PhotoAssetDto> WaitForStatusAsync(HttpClient api, Guid assetId, AssetStatus status, int timeoutSeconds = 20)
     {

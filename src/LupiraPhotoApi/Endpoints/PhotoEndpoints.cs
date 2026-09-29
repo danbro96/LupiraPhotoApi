@@ -54,9 +54,9 @@ public static class PhotoEndpoints
             .WithName("ListPhotoPlaces")
             .WithSummary("Place labels by asset count, most used first — suggestions for the place filter (q = substring).")
             .Produces<List<PhotoPlaceCount>>(StatusCodes.Status200OK);
-        g.MapGet("/map", (string bbox, DateTimeOffset? from, DateTimeOffset? to, PhotosHandler h, CancellationToken ct) => h.MapAsync(bbox, from, to, ct))
+        g.MapGet("/map", (string bbox, double? zoom, DateTimeOffset? from, DateTimeOffset? to, PhotosHandler h, CancellationToken ct) => h.MapAsync(bbox, zoom, from, to, ct))
             .WithName("GetPhotoMap")
-            .WithSummary("Geotagged Ready assets in a viewport as a GeoJSON FeatureCollection.")
+            .WithSummary("Geotagged Ready assets in a viewport as GeoJSON: a point per photo when at most 200 are in view or zoom >= 17, else a point per grid cell with its count.")
             .Produces<PhotoMapResponse>(StatusCodes.Status200OK);
         g.MapGet("/density", (DateTimeOffset? from, DateTimeOffset? to, PhotosHandler h, CancellationToken ct) => h.DensityAsync(from, to, ct))
             .WithName("GetPhotoDensity")

@@ -731,7 +731,7 @@
         "tags": [
           "Photos"
         ],
-        "summary": "Geotagged Ready assets in a viewport as a GeoJSON FeatureCollection.",
+        "summary": "Geotagged Ready assets in a viewport as GeoJSON: a point per photo when at most 200 are in view or zoom >= 17, else a point per grid cell with its count.",
         "operationId": "GetPhotoMap",
         "parameters": [
           {
@@ -740,6 +740,14 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "zoom",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
             }
           },
           {
@@ -1851,21 +1859,36 @@
       },
       "PhotoMapPropertiesDto": {
         "required": [
-          "id",
-          "kind",
-          "takenAt"
+          "count"
         ],
         "type": "object",
         "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
           "id": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "kind": {
-            "$ref": "#/components/schemas/AssetKind"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssetKind"
+              }
+            ]
           },
           "takenAt": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           },
           "placeLabel": {
@@ -1878,9 +1901,22 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The photo's, or a cell's newest photo's."
+          },
+          "bounds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "number",
+              "format": "double"
+            },
+            "description": "A cell's photo extent, [minLon, minLat, maxLon, maxLat] — where tapping it zooms to."
           }
-        }
+        },
+        "description": "One photo when the count is 1, else a grid cell drawn as a count bubble."
       },
       "PhotoMapResponse": {
         "required": [

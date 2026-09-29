@@ -84,12 +84,12 @@ public sealed class PhotosHandler(
     }
 
     public async Task<Results<Ok<PhotoMapResponse>, ProblemHttpResult, UnauthorizedHttpResult>> MapAsync(
-        string bbox, DateTimeOffset? from, DateTimeOffset? to, CancellationToken ct)
+        string bbox, double? zoom, DateTimeOffset? from, DateTimeOffset? to, CancellationToken ct)
     {
         if (!Bbox.TryParse(bbox, out var parsed))
             return Problems.BadRequest("bbox must be minLon,minLat,maxLon,maxLat.");
         var u = await user.GetAsync(ct);
-        return OpResultMap.OkProblem(await queryService.MapAsync(u.Id, parsed, from, to, ct));
+        return OpResultMap.OkProblem(await queryService.MapAsync(u.Id, parsed, zoom, from, to, ct));
     }
 
     public async Task<Results<Ok<PhotoAssetDto>, NotFound, ProblemHttpResult, UnauthorizedHttpResult>> GetAsync(

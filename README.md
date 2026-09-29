@@ -23,8 +23,9 @@ owner-scoped. Bytes live in an S3-compatible object store (Garage); Postgres hol
   history via lupira-location-api's internal seam (~100 m quantized). Geotag lookups are soft — an asset
   becomes Ready without a label rather than failing. Failed attempts retry with exponential backoff.
 - **Query** — keyset-paged list (time window, bbox, kind, status, located, place, source album, trash)
-  with presigned thumbnail URLs, id lookup, a GeoJSON `FeatureCollection` endpoint shaped for a MapLibre
-  source, measured-location photo counts per ~100 m cell, stats, imported albums, place-label suggestions,
+  with presigned thumbnail URLs, id lookup, a GeoJSON map layer clustered server-side (a point per photo
+  when the viewport is sparse or at street level, else per-cell counts on a Web Mercator grid three levels
+  below the viewport's zoom, so the response stays bounded), measured-location photo counts per ~100 m cell, stats, imported albums, place-label suggestions,
   and single-asset reads with a short-lived presigned original URL. A presigned GET is reused for half its
   expiry, so clients' URL-keyed image caches hit across refetches.
 - **Trash** — `POST /photos/{id}/trash` / `restore` soft-delete without touching status or bytes. Trashed

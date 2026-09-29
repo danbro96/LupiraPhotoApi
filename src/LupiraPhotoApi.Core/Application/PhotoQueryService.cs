@@ -1,3 +1,4 @@
+using LupiraPhotoApi.Core.Application.Map;
 using LupiraPhotoApi.Core.Application.Results;
 using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Dtos.Photos;
@@ -13,6 +14,12 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
     public const int MaxLimit = 500;
     public const int MapLimit = 2000;
     public const int LookupMax = 200;
+
+    /// <summary>A viewport holding at most this many photos, or zoomed to <see cref="PinZoom"/>, gets one pin per photo.</summary>
+    public const int PinLimit = 200;
+
+    /// <summary>Street level: past it a cell only merges photos taken at one spot, which no zoom can split.</summary>
+    public const double PinZoom = 17;
 
     private readonly TimeSpan _trashRetention = TimeSpan.FromDays(options.Value.TrashRetentionDays);
 
@@ -92,8 +99,9 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
         return OpResult<PhotoListResponse>.Ok(new PhotoListResponse { Items = items });
     }
 
+    /// <summary>Folder geotags count here, unlike density: browsing wants the place even when it is only assumed.</summary>
     public async Task<OpResult<PhotoMapResponse>> MapAsync(
-        Guid principalId, Bbox bbox, DateTimeOffset? from, DateTimeOffset? to, CancellationToken ct)
+        Guid principalId, Bbox bbox, double? zoom, DateTimeOffset? from, DateTimeOffset? to, CancellationToken ct)
     {
         var query = session.Query<PhotoAsset>()
             .Where(a => a.PrincipalId == principalId && a.Status == AssetStatus.Ready && a.TrashedAt == null)
@@ -102,26 +110,62 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
         if (from is { } f) query = query.Where(a => a.TakenAt >= f);
         if (to is { } t) query = query.Where(a => a.TakenAt <= t);
 
-        var assets = await query.OrderByDescending(a => a.TakenAt).Take(MapLimit).ToListAsync(ct);
-        var features = new List<PhotoMapFeatureDto>(assets.Count);
-        foreach (var asset in assets)
+        var points = (await query.Select(a => new { a.Id, a.Latitude, a.Longitude, a.TakenAt }).ToListAsync(ct))
+            .Select(p => new PhotoMapPoint(p.Id, p.Latitude!.Value, p.Longitude!.Value, p.TakenAt))
+            .ToList();
+
+        var features = new List<PhotoMapFeatureDto>();
+        if (points.Count <= PinLimit || zoom >= PinZoom)
         {
-            features.Add(new PhotoMapFeatureDto
+            var newest = points.OrderByDescending(p => p.TakenAt).Take(MapLimit).Select(p => p.Id).ToList();
+            foreach (var asset in (await LoadAllAsync(newest, ct)).OrderByDescending(a => a.TakenAt))
+                features.Add(await PinAsync(asset, ct));
+        }
+        else
+        {
+            var cells = PhotoMapGrid.Group(points, PhotoMapGrid.Level(bbox, zoom));
+            var newest = (await LoadAllAsync([.. cells.Select(c => c.NewestId)], ct)).ToDictionary(a => a.Id);
+            foreach (var cell in cells)
             {
-                Geometry = new PhotoMapPointDto { Coordinates = [asset.Longitude!.Value, asset.Latitude!.Value] },
-                Properties = new PhotoMapPropertiesDto
+                newest.TryGetValue(cell.NewestId, out var asset);
+                if (cell.Count == 1)
                 {
-                    Id = asset.Id,
-                    Kind = asset.Kind,
-                    TakenAt = asset.TakenAt,
-                    PlaceLabel = asset.PlaceLabel,
-                    ThumbUrl = await presigner.ThumbUrlAsync(asset, ct),
-                },
-            });
+                    if (asset is not null) features.Add(await PinAsync(asset, ct));
+                    continue;
+                }
+
+                features.Add(new PhotoMapFeatureDto
+                {
+                    Geometry = new PhotoMapPointDto { Coordinates = [cell.Longitude, cell.Latitude] },
+                    Properties = new PhotoMapPropertiesDto
+                    {
+                        Count = cell.Count,
+                        ThumbUrl = asset is null ? null : await presigner.ThumbUrlAsync(asset, ct),
+                        Bounds = [cell.Extent.MinLon, cell.Extent.MinLat, cell.Extent.MaxLon, cell.Extent.MaxLat],
+                    },
+                });
+            }
         }
 
         return OpResult<PhotoMapResponse>.Ok(new PhotoMapResponse { Features = features });
     }
+
+    private async Task<IReadOnlyList<PhotoAsset>> LoadAllAsync(List<Guid> ids, CancellationToken ct) =>
+        await session.Query<PhotoAsset>().Where(a => ids.Contains(a.Id)).ToListAsync(ct);
+
+    private async Task<PhotoMapFeatureDto> PinAsync(PhotoAsset asset, CancellationToken ct) => new()
+    {
+        Geometry = new PhotoMapPointDto { Coordinates = [asset.Longitude!.Value, asset.Latitude!.Value] },
+        Properties = new PhotoMapPropertiesDto
+        {
+            Count = 1,
+            Id = asset.Id,
+            Kind = asset.Kind,
+            TakenAt = asset.TakenAt,
+            PlaceLabel = asset.PlaceLabel,
+            ThumbUrl = await presigner.ThumbUrlAsync(asset, ct),
+        },
+    };
 
     public async Task<OpResult<PhotoAssetDto>> GetAsync(Guid principalId, Guid assetId, CancellationToken ct)
     {

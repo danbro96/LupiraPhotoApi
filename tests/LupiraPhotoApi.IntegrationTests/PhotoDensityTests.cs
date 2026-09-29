@@ -9,16 +9,6 @@ namespace LupiraPhotoApi.IntegrationTests;
 /// <summary>Where the owner's photos were measured to be taken, per ~100 m cell.</summary>
 public class PhotoDensityTests(PhotoApiTestFactory factory) : IntegrationTest(factory)
 {
-    private static PhotoAsset Located(Guid owner, double lat, double lon, DateTimeOffset takenAt, GeotagSource source = GeotagSource.ExifGps)
-    {
-        var asset = Seeded(owner);
-        asset.Latitude = lat;
-        asset.Longitude = lon;
-        asset.GeotagSource = source;
-        asset.TakenAt = takenAt;
-        return asset;
-    }
-
     private static async Task<List<PhotoDensityCellDto>> DensityAsync(HttpClient api, string query = "") =>
         (await api.GetFromJsonAsync<List<PhotoDensityCellDto>>($"/photos/density{query}", Json))!;
 
