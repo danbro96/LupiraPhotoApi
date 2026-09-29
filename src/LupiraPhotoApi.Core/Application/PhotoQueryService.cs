@@ -32,8 +32,9 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
         var order = sort ?? PhotoSort.TakenAtDesc;
         var query = session.Query<PhotoAsset>().Where(a => a.PrincipalId == principalId);
         query = trashed == true ? query.Where(a => a.TrashedAt != null) : query.Where(a => a.TrashedAt == null);
-        if (from is { } f) query = query.Where(a => a.TakenAt >= f);
-        if (to is { } t) query = query.Where(a => a.TakenAt <= t);
+        // Npgsql binds a timestamptz parameter only at offset 0; a client's +02:00 bound would 500.
+        if (from?.ToUniversalTime() is { } f) query = query.Where(a => a.TakenAt >= f);
+        if (to?.ToUniversalTime() is { } t) query = query.Where(a => a.TakenAt <= t);
         if (bbox is { } b)
         {
             query = query.Where(a => a.Latitude >= b.MinLat && a.Latitude <= b.MaxLat
@@ -107,8 +108,8 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
             .Where(a => a.PrincipalId == principalId && a.Status == AssetStatus.Ready && a.TrashedAt == null)
             .Where(a => a.Latitude >= bbox.MinLat && a.Latitude <= bbox.MaxLat
                      && a.Longitude >= bbox.MinLon && a.Longitude <= bbox.MaxLon);
-        if (from is { } f) query = query.Where(a => a.TakenAt >= f);
-        if (to is { } t) query = query.Where(a => a.TakenAt <= t);
+        if (from?.ToUniversalTime() is { } f) query = query.Where(a => a.TakenAt >= f);
+        if (to?.ToUniversalTime() is { } t) query = query.Where(a => a.TakenAt <= t);
 
         var points = (await query.Select(a => new { a.Id, a.Latitude, a.Longitude, a.TakenAt }).ToListAsync(ct))
             .Select(p => new PhotoMapPoint(p.Id, p.Latitude!.Value, p.Longitude!.Value, p.TakenAt))

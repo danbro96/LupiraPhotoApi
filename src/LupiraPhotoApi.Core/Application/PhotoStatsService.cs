@@ -62,8 +62,8 @@ public sealed class PhotoStatsService(IQuerySession session)
         var query = session.Query<PhotoAsset>()
             .Where(a => a.PrincipalId == principalId && a.Status == AssetStatus.Ready && a.TrashedAt == null
                      && a.Latitude != null && a.Longitude != null && a.GeotagSource != GeotagSource.Folder && a.GeotagSource != GeotagSource.Manual);
-        if (from is { } f) query = query.Where(a => a.TakenAt >= f);
-        if (to is { } t) query = query.Where(a => a.TakenAt <= t);
+        if (from?.ToUniversalTime() is { } f) query = query.Where(a => a.TakenAt >= f);
+        if (to?.ToUniversalTime() is { } t) query = query.Where(a => a.TakenAt <= t);
 
         var rows = await query.Select(a => new { a.Latitude, a.Longitude, a.TakenAt }).ToListAsync(ct);
         return OpResult<List<PhotoDensityCellDto>>.Ok(Aggregate(rows.Select(r => (r.Latitude!.Value, r.Longitude!.Value, r.TakenAt))));

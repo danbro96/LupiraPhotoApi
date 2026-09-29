@@ -76,8 +76,8 @@ public sealed class PhotoCurationService(IDocumentSession session, PhotoPresigne
         var query = session.Query<PhotoAsset>()
             .Where(a => a.PrincipalId == principalId && a.Status != AssetStatus.Duplicate && a.TrashedAt == null);
         if (ids.Count > 0) query = query.Where(a => ids.Contains(a.Id));
-        if (req.From is { } from) query = query.Where(a => a.TakenAt >= from);
-        if (req.To is { } to) query = query.Where(a => a.TakenAt <= to);
+        if (req.From?.ToUniversalTime() is { } from) query = query.Where(a => a.TakenAt >= from);
+        if (req.To?.ToUniversalTime() is { } to) query = query.Where(a => a.TakenAt <= to);
         if (Clean(req.CameraModel) is { } model)
             query = query.Where(a => a.Camera!.Model!.Equals(model, StringComparison.OrdinalIgnoreCase));
         if (req is { AtLatitude: { } atLat, AtLongitude: { } atLon })

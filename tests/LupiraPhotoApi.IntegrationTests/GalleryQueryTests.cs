@@ -213,4 +213,20 @@ public class GalleryQueryTests(PhotoApiTestFactory factory) : IntegrationTest(fa
         var stats = await Factory.ApiClient("erik@example.com").GetFromJsonAsync<PhotoStats>("/photos/stats", Json);
         Assert.Equal(0, stats!.TotalAssets);
     }
+
+    [Fact]
+    public async Task AWindowWithANonUtcOffsetFiltersOnTheSameInstant()
+    {
+        var owner = await PrincipalIdAsync(Factory.ApiClient("anna@example.com"));
+        var inside = Located(owner, 59.33, 18.07, new DateTimeOffset(2015, 8, 9, 9, 0, 0, TimeSpan.Zero));
+        var before = Located(owner, 59.33, 18.07, new DateTimeOffset(2015, 8, 9, 6, 0, 0, TimeSpan.Zero));
+        await StoreAsync(inside, before);
+
+        // 10:00+02:00 is 08:00Z, so only the 09:00Z asset is inside.
+        var from = Uri.EscapeDataString("2015-08-09T10:00:00+02:00");
+        var to = Uri.EscapeDataString("2015-08-09T12:00:00+02:00");
+        var items = (await Factory.ApiClient("anna@example.com").GetFromJsonAsync<PhotoListResponse>($"/photos?from={from}&to={to}", Json))!.Items;
+
+        Assert.Equal([inside.Id], items.Select(i => i.Id));
+    }
 }

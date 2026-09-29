@@ -79,8 +79,9 @@ public class PhotoLocationTests(PhotoApiTestFactory factory) : IntegrationTest(f
         {
             Latitude = 59.02,
             Longitude = 16.47,
-            From = Day.AddHours(-1),
-            To = Day.AddHours(1),
+            // A local-time window, as a client in Sweden sends it.
+            From = Day.AddHours(-1).ToOffset(TimeSpan.FromHours(2)),
+            To = Day.AddHours(1).ToOffset(TimeSpan.FromHours(2)),
             CameraModel = "gt-i9300",
             AtLatitude = StaleLat,
             AtLongitude = StaleLon,
