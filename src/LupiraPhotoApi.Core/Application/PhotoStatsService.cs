@@ -51,7 +51,8 @@ public sealed class PhotoStatsService(IQuerySession session)
             .Select(kv => new PhotoPlaceCount { Label = kv.Key, Count = kv.Value })
             .ToList();
 
-    /// <summary>Measured locations only: a Folder geotag is the import folder's assumed place, not where the photo was taken.</summary>
+    /// <summary>Measured locations only: a Folder geotag is the import folder's assumed place and a Manual one is
+    /// hand-placed, neither where a receiver fixed the photo.</summary>
     public async Task<OpResult<List<PhotoDensityCellDto>>> DensityAsync(
         Guid principalId, DateTimeOffset? from, DateTimeOffset? to, CancellationToken ct)
     {
@@ -60,7 +61,7 @@ public sealed class PhotoStatsService(IQuerySession session)
 
         var query = session.Query<PhotoAsset>()
             .Where(a => a.PrincipalId == principalId && a.Status == AssetStatus.Ready && a.TrashedAt == null
-                     && a.Latitude != null && a.Longitude != null && a.GeotagSource != GeotagSource.Folder);
+                     && a.Latitude != null && a.Longitude != null && a.GeotagSource != GeotagSource.Folder && a.GeotagSource != GeotagSource.Manual);
         if (from is { } f) query = query.Where(a => a.TakenAt >= f);
         if (to is { } t) query = query.Where(a => a.TakenAt <= t);
 

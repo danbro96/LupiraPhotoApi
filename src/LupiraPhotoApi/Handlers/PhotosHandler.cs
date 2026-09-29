@@ -134,6 +134,27 @@ public sealed class PhotosHandler(
         return OpResultMap.OkNotFoundProblem(await curationService.UpdateAsync(u.Id, id, request, ct));
     }
 
+    public async Task<Results<Ok<PhotoAssetDto>, NotFound, ProblemHttpResult, UnauthorizedHttpResult>> SetLocationAsync(
+        Guid id, SetPhotoLocationRequest request, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return OpResultMap.OkNotFoundProblem(await curationService.SetLocationAsync(u.Id, id, request, ct));
+    }
+
+    public async Task<Results<Ok<PhotoAssetDto>, NotFound, ProblemHttpResult, UnauthorizedHttpResult>> ClearLocationAsync(
+        Guid id, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return OpResultMap.OkNotFoundProblem(await curationService.ClearLocationAsync(u.Id, id, ct));
+    }
+
+    public async Task<Results<Ok<RelocatePhotosResponse>, ProblemHttpResult, UnauthorizedHttpResult>> RelocateAsync(
+        RelocatePhotosRequest request, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return OpResultMap.OkProblem(await curationService.RelocateAsync(u.Id, request, ct));
+    }
+
     public async Task<Results<Ok<List<PhotoAlbumDto>>, UnauthorizedHttpResult>> AlbumsAsync(CancellationToken ct)
     {
         var u = await user.GetAsync(ct);

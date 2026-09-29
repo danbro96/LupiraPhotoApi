@@ -47,6 +47,8 @@ public sealed class PhotoAsset
 
     public PlaceHint? PlaceHint { get; set; }
 
+    public LocationOverride? LocationOverride { get; set; }
+
     public Guid? CapturedByContactId { get; set; }
 
     public CapturedBySource? CapturedBySource { get; set; }

@@ -60,7 +60,7 @@ builder.Services.AddScoped<CurrentUser>();
 builder.Services.AddScoped<MeHandler>();
 builder.Services.AddScoped<PhotosHandler>();
 
-// MCP server for the agent (read-only), mounted at /mcp over Streamable HTTP. LAN/WireGuard-only.
+// MCP server for the agent (reads + location corrections), mounted at /mcp over Streamable HTTP. LAN/WireGuard-only.
 builder.Services.AddMcpServer().WithHttpTransport().WithTools<PhotoTools>();
 
 builder.Services.ConfigureHttpJsonOptions(o =>

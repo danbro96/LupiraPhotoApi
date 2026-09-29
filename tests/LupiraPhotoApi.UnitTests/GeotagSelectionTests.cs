@@ -134,6 +134,45 @@ public class GeotagSelectionTests
     }
 
     [Fact]
+    public async Task ManualLocation_BeatsAStaleFileFix_AndKeepsItsLabel()
+    {
+        var asset = Asset();
+        ManualLocation.Set(asset, 59.02, 16.47, "Mormor", "Mormor", TakenAt);
+        await Service(reverseLabel: "Skanör med Falsterbo", file: new MediaMetadata { Latitude = 55.390556, Longitude = 12.833056 })
+            .ProcessAsync(asset, "sub-1", CancellationToken.None);
+
+        Assert.Equal(GeotagSource.Manual, asset.GeotagSource);
+        Assert.Equal(59.02, asset.Latitude);
+        Assert.Equal(16.47, asset.Longitude);
+        Assert.Equal("Mormor", asset.PlaceLabel);
+    }
+
+    [Fact]
+    public async Task ManualLocation_WithoutALabel_IsReverseGeocoded()
+    {
+        var asset = Asset();
+        ManualLocation.Set(asset, 59.02, 16.47, null, null, TakenAt);
+        await Service(reverseLabel: "Sköldinge").ProcessAsync(asset, "sub-1", CancellationToken.None);
+
+        Assert.Equal(GeotagSource.Manual, asset.GeotagSource);
+        Assert.Equal("Sköldinge", asset.PlaceLabel);
+    }
+
+    [Fact]
+    public async Task ClearedOverride_OnALegacyPhoneAsset_FallsBackToItsOwnFix()
+    {
+        var asset = Asset(59.33, 18.07);
+        asset.GeotagSource = GeotagSource.ExifGps;
+        ManualLocation.Set(asset, 59.02, 16.47, null, null, TakenAt);
+        ManualLocation.Clear(asset);
+        await Service(reverseLabel: "Stockholm").ProcessAsync(asset, "sub-1", CancellationToken.None);
+
+        Assert.Equal(GeotagSource.ExifGps, asset.GeotagSource);
+        Assert.Equal(59.33, asset.Latitude);
+        Assert.Equal(18.07, asset.Longitude);
+    }
+
+    [Fact]
     public async Task Camera_ComesFromTheFile()
     {
         var asset = Asset();

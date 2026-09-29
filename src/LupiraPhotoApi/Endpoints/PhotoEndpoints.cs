@@ -70,6 +70,18 @@ public static class PhotoEndpoints
             .WithName("UpdatePhoto")
             .WithSummary("Hand-set metadata (the photographer); outranks anything derived.")
             .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
+        g.MapPut("/{id:guid}/location", (Guid id, SetPhotoLocationRequest body, PhotosHandler h, CancellationToken ct) => h.SetLocationAsync(id, body, ct))
+            .WithName("SetPhotoLocation")
+            .WithSummary("Hand-set the location; outranks the file's own GPS and survives reprocessing.")
+            .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
+        g.MapDelete("/{id:guid}/location", (Guid id, PhotosHandler h, CancellationToken ct) => h.ClearLocationAsync(id, ct))
+            .WithName("ClearPhotoLocation")
+            .WithSummary("Drop a hand-set location and re-queue the asset so its geotag is re-derived (idempotent).")
+            .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
+        g.MapPost("/relocate", (RelocatePhotosRequest body, PhotosHandler h, CancellationToken ct) => h.RelocateAsync(body, ct))
+            .WithName("RelocatePhotos")
+            .WithSummary("Hand-set one location on every asset a selector matches (ids, or a time window narrowed by camera and current coordinate). dryRun previews.")
+            .Produces<RelocatePhotosResponse>(StatusCodes.Status200OK);
         g.MapDelete("/{id:guid}", (Guid id, PhotosHandler h, CancellationToken ct) => h.DeleteAsync(id, ct))
             .WithName("DeletePhoto")
             .WithSummary("Delete an asset permanently, trashed or not: objects first, then the document.")

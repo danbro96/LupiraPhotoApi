@@ -61,11 +61,18 @@ public sealed class PhotoProcessingService(
         }
     }
 
-    /// <summary>File EXIF GPS → the declared hint (phone coordinates or an import folder) → the owner's
-    /// location history → none. A hint's curated label beats reverse geocoding.</summary>
+    /// <summary>A hand-set location → file EXIF GPS → the declared hint (phone coordinates or an import folder)
+    /// → the owner's location history → none. A curated label beats reverse geocoding.</summary>
     private async Task GeotagAsync(PhotoAsset asset, MediaMetadata metadata, string authentikSub, CancellationToken ct)
     {
-        var hint = asset.PlaceHint ?? LegacyDeviceHint(asset);
+        if (asset.LocationOverride is { } manual)
+        {
+            (asset.Latitude, asset.Longitude, asset.GeotagSource) = (manual.Latitude, manual.Longitude, GeotagSource.Manual);
+            asset.PlaceLabel = manual.Label ?? await reverseGeocoder.ReverseLabelAsync(manual.Latitude, manual.Longitude, ct);
+            return;
+        }
+
+        var hint = asset.PlaceHint ?? PlaceHint.LegacyDevice(asset);
         string? label = null;
 
         if (metadata is { Latitude: { } fileLat, Longitude: { } fileLon })
@@ -94,11 +101,4 @@ public sealed class PhotoProcessingService(
             label = await reverseGeocoder.ReverseLabelAsync(asset.Latitude!.Value, asset.Longitude!.Value, ct);
         asset.PlaceLabel = label;
     }
-
-    /// <summary>Phone assets declared before <see cref="PhotoAsset.PlaceHint"/> existed carry their MediaStore
-    /// coordinates only in Latitude/Longitude.</summary>
-    private static PlaceHint? LegacyDeviceHint(PhotoAsset asset) =>
-        asset is { Latitude: not null, Longitude: not null, GeotagSource: GeotagSource.None or GeotagSource.ExifGps }
-            ? new PlaceHint { Source = PlaceHintSource.Device, Latitude = asset.Latitude, Longitude = asset.Longitude }
-            : null;
 }

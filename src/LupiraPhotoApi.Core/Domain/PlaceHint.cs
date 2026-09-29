@@ -13,4 +13,11 @@ public sealed class PlaceHint
 
     /// <summary>A curated name (folder or address); wins over reverse geocoding.</summary>
     public string? Label { get; set; }
+
+    /// <summary>Phone assets declared before <see cref="PhotoAsset.PlaceHint"/> existed carry their MediaStore
+    /// coordinates only in Latitude/Longitude.</summary>
+    public static PlaceHint? LegacyDevice(PhotoAsset asset) =>
+        asset is { Latitude: not null, Longitude: not null, GeotagSource: GeotagSource.None or GeotagSource.ExifGps }
+            ? new PlaceHint { Source = PlaceHintSource.Device, Latitude = asset.Latitude, Longitude = asset.Longitude }
+            : null;
 }

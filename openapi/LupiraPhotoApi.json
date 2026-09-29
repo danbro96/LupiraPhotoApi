@@ -1073,6 +1073,204 @@
         ]
       }
     },
+    "/photos/{id}/location": {
+      "put": {
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Hand-set the location; outranks the file's own GPS and survives reprocessing.",
+        "operationId": "SetPhotoLocation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPhotoLocationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoAssetDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Drop a hand-set location and re-queue the asset so its geotag is re-derived (idempotent).",
+        "operationId": "ClearPhotoLocation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoAssetDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/photos/relocate": {
+      "post": {
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Hand-set one location on every asset a selector matches (ids, or a time window narrowed by camera and current coordinate). dryRun previews.",
+        "operationId": "RelocatePhotos",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RelocatePhotosRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelocatePhotosResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/photos/trash": {
       "delete": {
         "tags": [
@@ -1318,7 +1516,8 @@
           "None",
           "ExifGps",
           "LocationHistory",
-          "Folder"
+          "Folder",
+          "Manual"
         ]
       },
       "LookupPhotosRequest": {
@@ -2067,6 +2266,133 @@
           }
         },
         "description": "RFC 9457 problem details."
+      },
+      "RelocatePhotosRequest": {
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "label": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "A curated place name; omit to reverse-geocode the coordinates."
+          },
+          "ids": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "from": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "to": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "cameraModel": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The EXIF camera model, case-insensitive (`GT-I9300`)."
+          },
+          "atLatitude": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "description": "Only assets currently at this coordinate (within ~1 m); pairs with double? RelocatePhotosRequest.AtLongitude.",
+            "format": "double"
+          },
+          "atLongitude": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "dryRun": {
+            "type": "boolean",
+            "description": "Report what would move without changing anything."
+          }
+        },
+        "description": "Hand-sets one location on every asset the selector matches — e.g. all of one camera's photos in a\n            window that carry the same stale GPS fix. Needs List&lt;Guid&gt;? RelocatePhotosRequest.Ids or both DateTimeOffset? RelocatePhotosRequest.From and\n            DateTimeOffset? RelocatePhotosRequest.To; the other criteria narrow further. Duplicates and trashed assets are never matched."
+      },
+      "RelocatePhotosResponse": {
+        "required": [
+          "count",
+          "ids"
+        ],
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "placeLabel": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The label the moved assets now show; null on a dry run."
+          }
+        }
+      },
+      "SetPhotoLocationRequest": {
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "label": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "A curated place name; omit to reverse-geocode the coordinates."
+          }
+        },
+        "description": "A hand-set location; outranks the file's own GPS until cleared."
       },
       "TakenAtSource": {
         "enum": [

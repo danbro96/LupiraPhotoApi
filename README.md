@@ -20,8 +20,15 @@ owner-scoped. Bytes live in an S3-compatible object store (Garage); Postgres hol
 - **Processing** — a worker claims Uploaded assets (leased; crash-recoverable), renders a 512 px WebP
   thumbnail (Magick.NET for stills incl. HEIC; ffmpeg poster frames for video), and geotags: client EXIF
   GPS → reverse-geocode label via lupira-geo-api; no GPS → timestamp match against the owner's location
-  history via lupira-location-api's internal seam (~100 m quantized). Geotag lookups are soft — an asset
-  becomes Ready without a label rather than failing. Failed attempts retry with exponential backoff.
+  history via lupira-location-api's internal seam (~100 m quantized). A hand-set location outranks all of
+  these. Geotag lookups are soft — an asset becomes Ready without a label rather than failing. Failed
+  attempts retry with exponential backoff.
+- **Location corrections** — `PUT /photos/{id}/location` hand-sets coordinates (and optionally a label);
+  `POST /photos/relocate` does it for every asset a selector matches (ids, or a time window narrowed by
+  camera model and current coordinate — the shape of a camera's stale GPS fix; `dryRun` previews). The
+  override is stored apart from the resolved geotag (`geotagSource: Manual`), so reprocessing re-applies
+  it. `DELETE /photos/{id}/location` drops it and re-queues the asset to re-derive. Manual geotags show on
+  the map but not in the measured-location density.
 - **Query** — keyset-paged list (time window, bbox, kind, status, located, place, source album, trash)
   with presigned thumbnail URLs, id lookup, a GeoJSON map layer clustered server-side (a point per photo
   when the viewport is sparse or at street level, else per-cell counts on a Web Mercator grid three levels
@@ -38,8 +45,8 @@ owner-scoped. Bytes live in an S3-compatible object store (Garage); Postgres hol
 
 | Surface | Base path | Auth | Notes |
 |---|---|---|---|
-| REST (owner) | `/photos`, `/me` | OIDC JWT (`ApiPolicy`) | Declare/complete, list/lookup/map/density/stats/albums/places, get/update, trash/restore/empty-trash, delete, reprocess. |
-| MCP (agent) | `/mcp` | OIDC JWT (`ApiPolicy`) | Streamable HTTP. Read-only: `list_photos`, `search_photos`, `photo_stats`. |
+| REST (owner) | `/photos`, `/me` | OIDC JWT (`ApiPolicy`) | Declare/complete, list/lookup/map/density/stats/albums/places, get/update, set/clear location, relocate, trash/restore/empty-trash, delete, reprocess. |
+| MCP (agent) | `/mcp` | OIDC JWT (`ApiPolicy`) | Streamable HTTP. Reads: `list_photos`, `search_photos`, `photo_stats`; location corrections: `relocate_photos`, `clear_photo_location`. |
 | Health | `/livez`, `/readyz` | none | Liveness / readiness (Postgres + object store reachable). |
 | OpenAPI | `/openapi/v1.json` | none | Generated at build time into `openapi/`. |
 | API reference | `/scalar/v1` | none | Scalar interactive UI. |
