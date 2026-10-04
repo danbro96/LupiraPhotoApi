@@ -11,6 +11,7 @@ on:
 env:
   SOLUTION: LupiraPhotoApi.slnx
   INTEGRATION_PROJECT: tests/LupiraPhotoApi.IntegrationTests
+  PACKAGES_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
 
 jobs:
   unit:

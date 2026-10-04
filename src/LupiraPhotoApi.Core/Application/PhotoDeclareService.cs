@@ -1,5 +1,6 @@
+using Lupira.Primitives;
+using Lupira.Results;
 using LupiraPhotoApi.Core.Application.Import;
-using LupiraPhotoApi.Core.Application.Results;
 using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Dtos.Photos;
 using LupiraPhotoApi.Core.Storage;

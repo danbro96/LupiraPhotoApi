@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json;
 using LupiraPhotoApi.Core.Application.Import;
 using Microsoft.Extensions.Options;

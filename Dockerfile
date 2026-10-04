@@ -2,9 +2,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 # Copy both project files before restore (the host references Core) so layer caching works.
+COPY nuget.config Directory.Build.props ./
 COPY src/LupiraPhotoApi/LupiraPhotoApi.csproj src/LupiraPhotoApi/
 COPY src/LupiraPhotoApi.Core/LupiraPhotoApi.Core.csproj src/LupiraPhotoApi.Core/
-RUN dotnet restore src/LupiraPhotoApi/LupiraPhotoApi.csproj
+RUN --mount=type=secret,id=packages_token,env=PACKAGES_TOKEN dotnet restore src/LupiraPhotoApi/LupiraPhotoApi.csproj
 COPY . .
 RUN dotnet publish src/LupiraPhotoApi/LupiraPhotoApi.csproj -c Release -o /app --no-restore
 

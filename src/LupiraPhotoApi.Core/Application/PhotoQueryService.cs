@@ -1,5 +1,5 @@
+using Lupira.Results;
 using LupiraPhotoApi.Core.Application.Map;
-using LupiraPhotoApi.Core.Application.Results;
 using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Dtos.Photos;
 using Marten;

@@ -1,5 +1,5 @@
 using System.Linq.Expressions;
-using LupiraPhotoApi.Core.Application.Results;
+using Lupira.Results;
 using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Storage;
 using Marten;

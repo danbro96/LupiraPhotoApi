@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Lupira.Mcp;
 using LupiraPhotoApi.Auth;
 using LupiraPhotoApi.Core.Application;
 using LupiraPhotoApi.Core.Domain;
@@ -35,7 +36,7 @@ public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoS
 
         var pid = (await user.GetAsync(ct)).Id;
         var result = await query.ListAsync(pid, from, to, parsed, kind, null, null, null, null, null, null, limit, cursor, ct);
-        return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());
+        return result.Require();
     }
 
     [McpServerTool(Name = "search_photos")]
@@ -50,8 +51,7 @@ public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoS
         // Server-side filter: this used to page the newest 500 and match in memory, so anything older
         // than that window was simply unfindable.
         var result = await query.ListAsync(pid, from, to, null, null, null, null, place, null, null, null, PhotoQueryService.MaxLimit, null, ct);
-        if (!result.IsOk) throw new McpException(result.Error ?? result.Status.ToString());
-        return result.Value!.Items;
+        return result.Require().Items;
     }
 
     [McpServerTool(Name = "photo_stats")]
@@ -92,7 +92,7 @@ public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoS
             DryRun = dryRun,
         };
         var result = await curation.RelocateAsync(pid, request, ct);
-        return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());
+        return result.Require();
     }
 
     [McpServerTool(Name = "clear_photo_location")]
@@ -103,7 +103,7 @@ public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoS
     {
         var pid = (await user.GetAsync(ct)).Id;
         var result = await curation.ClearLocationAsync(pid, id, ct);
-        return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());
+        return result.Require();
     }
 
     [McpServerTool(Name = "retime_photos")]
@@ -132,7 +132,7 @@ public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoS
             DryRun = dryRun,
         };
         var result = await curation.RetimeAsync(pid, request, ct);
-        return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());
+        return result.Require();
     }
 
     [McpServerTool(Name = "clear_photo_time")]
@@ -143,7 +143,7 @@ public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoS
     {
         var pid = (await user.GetAsync(ct)).Id;
         var result = await curation.ClearTakenAtAsync(pid, id, ct);
-        return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());
+        return result.Require();
     }
 
     [McpServerTool(Name = "sweep_photo_gps")]
@@ -158,7 +158,7 @@ public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoS
         var pid = (await user.GetAsync(ct)).Id;
         var request = new GpsSweepRequest { From = from, To = to, Apply = apply, RejectCoordinates = rejectCoordinates };
         var result = await gpsSweep.SweepAsync(pid, request, ct);
-        return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());
+        return result.Require();
     }
 
     [McpServerTool(Name = "restore_photo_gps")]
@@ -169,6 +169,6 @@ public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoS
     {
         var pid = (await user.GetAsync(ct)).Id;
         var result = await gpsSweep.RestoreManyAsync(pid, ids, ct);
-        return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());
+        return result.Require();
     }
 }

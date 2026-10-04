@@ -1,31 +1,31 @@
-using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using Lupira.Auth.DevUser;
+using Lupira.Hosting.Defaults;
+using Lupira.Hosting.Health;
+using Lupira.Hosting.LanEdge;
+using Lupira.Hosting.Observability;
+using Lupira.Hosting.Problems;
+using Lupira.Mcp;
 using LupiraPhotoApi.Auth;
 using LupiraPhotoApi.Cli;
 using LupiraPhotoApi.Clients;
 using LupiraPhotoApi.Core.Application;
 using LupiraPhotoApi.Core.Application.Import;
 using LupiraPhotoApi.Core.Application.Processing;
-using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Storage;
 using LupiraPhotoApi.Endpoints;
 using LupiraPhotoApi.Handlers;
-using LupiraPhotoApi.Http;
+using LupiraPhotoApi.Health;
 using LupiraPhotoApi.Mcp;
 using LupiraPhotoApi.Media;
 using LupiraPhotoApi.Storage;
 using LupiraPhotoApi.Workers;
 using Marten;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.OpenApi;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -61,14 +61,12 @@ builder.Services.AddScoped<MeHandler>();
 builder.Services.AddScoped<PhotosHandler>();
 
 // MCP server for the agent (reads + location corrections), mounted at /mcp over Streamable HTTP. LAN/WireGuard-only.
-builder.Services.AddMcpServer().WithHttpTransport()
-    .WithRequestFilters(f => f.AddCallToolFilter(StrictToolArguments.Filter))
-    .WithTools<PhotoTools>();
+builder.Services.AddLupiraMcp().WithTools<PhotoTools>();
 
-builder.Services.ConfigureHttpJsonOptions(o =>
+builder.AddLupiraDefaults(o =>
 {
-    o.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
-    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    o.CaseInsensitiveProperties = true;
+    o.ForwardedHeaders = ForwardedHeaders.None;
 });
 
 builder.Services.AddHostedService<PhotoProcessingWorker>();
@@ -110,48 +108,22 @@ var authBuilder = builder.Services.AddAuthentication(JwtBearerDefaults.Authentic
 
 // Development-only: allow X-Dev-User header auth so the API can be exercised without Authentik.
 if (builder.Environment.IsDevelopment())
-    authBuilder.AddScheme<AuthenticationSchemeOptions, DevAuthHandler>(DevAuthHandler.SchemeName, _ => { });
+    authBuilder.AddLupiraDevHeaderAuth();
 
 string[] apiSchemes = builder.Environment.IsDevelopment()
-    ? [JwtBearerDefaults.AuthenticationScheme, DevAuthHandler.SchemeName]
+    ? [JwtBearerDefaults.AuthenticationScheme, DevAuthenticationBuilderExtensions.DefaultScheme]
     : [JwtBearerDefaults.AuthenticationScheme];
 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("ApiPolicy", p => p.AddAuthenticationSchemes(apiSchemes).RequireAuthenticatedUser());
 
-// --- Observability: OpenTelemetry -> OpenObserve. Env-gated; the OTLP exporter reads OTEL_EXPORTER_OTLP_* itself. ---
-var otlpEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
-builder.Services.AddOpenTelemetry()
-    .ConfigureResource(r => r.AddService("lupira-photo-api"))
-    .WithTracing(t =>
-    {
-        t.AddAspNetCoreInstrumentation(o => o.Filter = ctx =>
-            ctx.Request.Path != "/livez" && ctx.Request.Path != "/readyz");
-        t.AddHttpClientInstrumentation();
-        t.AddSource(PhotoTelemetry.ActivitySourceName);
-        if (!string.IsNullOrWhiteSpace(otlpEndpoint)) t.AddOtlpExporter();
-    })
-    .WithMetrics(m =>
-    {
-        m.AddAspNetCoreInstrumentation();
-        m.AddHttpClientInstrumentation();
-        m.AddRuntimeInstrumentation();
-        if (!string.IsNullOrWhiteSpace(otlpEndpoint)) m.AddOtlpExporter();
-    });
+builder.AddLupiraTelemetry("lupira-photo-api");
 
-builder.Logging.AddOpenTelemetry(o =>
-{
-    o.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("lupira-photo-api"));
-    o.IncludeScopes = true;
-    o.IncludeFormattedMessage = true;
-    if (!string.IsNullOrWhiteSpace(otlpEndpoint)) o.AddOtlpExporter();
-});
+builder.Services.AddLupiraHealth()
+    .AddReadyCheck<DatabaseReadyCheck>("postgres")
+    .AddReadyCheck<ObjectStoreReadyCheck>("object-store");
 
-builder.Services.AddAppHealthChecks();
-
-builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = ctx =>
-    ctx.ProblemDetails.Extensions["traceId"] = Activity.Current?.Id ?? ctx.HttpContext.TraceIdentifier);
-builder.Services.AddExceptionHandler<ProblemExceptionHandler>();
+builder.Services.AddLupiraProblems();
 
 builder.Services.AddOpenApi("v1", options =>
 {
@@ -284,12 +256,10 @@ if (CliCommands.Handles(args))
 
 // LAN-only surfaces (/mcp + its discovery metadata): 404 anything arriving through the tunnel,
 // before auth so a tunnelled probe never even receives a challenge.
-app.UseLanOnlySurfaces();
+app.UseLanOnlySurfaces("/mcp", "/.well-known/oauth-protected-resource");
 
+app.UseLupiraDefaults();
 app.UseExceptionHandler();
-// Fills the empty body of a bare 4xx (auth challenges, TypedResults.NotFound) with ProblemDetails, so the
-// spec's promise holds. Scoped away from /mcp — JSON-RPC has its own error shape.
-app.UseWhen(c => !c.Request.Path.StartsWithSegments("/mcp"), b => b.UseStatusCodePages());
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -304,7 +274,7 @@ app.MapGet("/", () => TypedResults.Redirect("/scalar"))
    .ExcludeFromDescription()
    .AllowAnonymous();
 
-app.MapAppHealthChecks();
+app.MapLupiraHealth();
 
 // REST surface.
 app.MapMe();
@@ -312,7 +282,7 @@ app.MapPhotos();
 
 // Agent MCP transport (LAN/WireGuard-only; excluded from the Cloudflare Tunnel at the edge).
 app.MapMcpResourceMetadata(app.Configuration["Auth:Oidc:Authority"]);
-app.MapMcp("/mcp").RequireAuthorization("ApiPolicy");
+app.MapLupiraMcp();
 
 app.Run();
 
