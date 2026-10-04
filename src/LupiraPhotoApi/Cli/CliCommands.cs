@@ -8,7 +8,6 @@ namespace LupiraPhotoApi.Cli;
 /// <code>
 /// --import &lt;dir&gt; --source handelser|platser|family|takeout --principal &lt;email&gt;
 ///     [--me-contact &lt;id&gt;] [--map &lt;file&gt;] [--timezone Europe/Stockholm] [--dry-run]
-/// --backfill-captured-by --principal &lt;email&gt; --contact &lt;id&gt;
 /// --reprocess-all --principal &lt;email&gt;
 /// </code>
 /// The running API's worker processes what they queue; these commands only declare, upload and flag.
@@ -16,7 +15,7 @@ namespace LupiraPhotoApi.Cli;
 public static class CliCommands
 {
     public static bool Handles(string[] args) =>
-        args.Contains("--import") || args.Contains("--backfill-captured-by") || args.Contains("--reprocess-all");
+        args.Contains("--import") || args.Contains("--reprocess-all");
 
     public static async Task<int> RunAsync(IServiceProvider services, string[] args)
     {
@@ -28,14 +27,6 @@ public static class CliCommands
             return Fail("--principal <email> is required.");
         if (await sp.GetRequiredService<PrincipalDirectory>().FindByEmailAsync(email, ct) is not { } principal)
             return Fail($"No principal for {email} — sign in once so it is provisioned.");
-
-        if (args.Contains("--backfill-captured-by"))
-        {
-            if (!Guid.TryParse(Value(args, "--contact"), out var contact)) return Fail("--contact <id> is required.");
-            var n = await sp.GetRequiredService<PhotoMaintenanceService>().BackfillCapturedByAsync(principal.Id, contact, ct);
-            Console.WriteLine($"Photographer set on {n} phone uploads.");
-            return 0;
-        }
 
         if (args.Contains("--reprocess-all"))
         {
