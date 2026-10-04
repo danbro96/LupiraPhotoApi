@@ -82,6 +82,26 @@ public static class PhotoEndpoints
             .WithName("RelocatePhotos")
             .WithSummary("Hand-set one location on every asset a selector matches (ids, or a time window narrowed by camera and current coordinate). dryRun previews.")
             .Produces<RelocatePhotosResponse>(StatusCodes.Status200OK);
+        g.MapPut("/{id:guid}/taken-at", (Guid id, SetPhotoTakenAtRequest body, PhotosHandler h, CancellationToken ct) => h.SetTakenAtAsync(id, body, ct))
+            .WithName("SetPhotoTakenAt")
+            .WithSummary("Hand-set the capture time; outranks every derived time and survives import re-runs.")
+            .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
+        g.MapDelete("/{id:guid}/taken-at", (Guid id, PhotosHandler h, CancellationToken ct) => h.ClearTakenAtAsync(id, ct))
+            .WithName("ClearPhotoTakenAt")
+            .WithSummary("Drop a hand-set capture time and restore the derived one (idempotent).")
+            .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
+        g.MapPost("/retime", (RetimePhotosRequest body, PhotosHandler h, CancellationToken ct) => h.RetimeAsync(body, ct))
+            .WithName("RetimePhotos")
+            .WithSummary("Shift or set the capture time of every asset a selector matches (ids, or a time window narrowed by camera and device). dryRun previews before/after.")
+            .Produces<RetimePhotosResponse>(StatusCodes.Status200OK);
+        g.MapPost("/gps-sweep", (GpsSweepRequest body, PhotosHandler h, CancellationToken ct) => h.GpsSweepAsync(body, ct))
+            .WithName("SweepPhotoGps")
+            .WithSummary("Report impossible GPS fixes per camera: speed spikes and coordinates repeated across days. apply rejects the spikes and the listed coordinates, and re-queues them.")
+            .Produces<GpsSweepResponse>(StatusCodes.Status200OK);
+        g.MapDelete("/{id:guid}/gps-rejection", (Guid id, PhotosHandler h, CancellationToken ct) => h.RestoreGpsAsync(id, ct))
+            .WithName("RestorePhotoGps")
+            .WithSummary("Drop a GPS rejection and re-queue the asset so its fix is used again (idempotent).")
+            .Produces<PhotoAssetDto>(StatusCodes.Status200OK);
         g.MapDelete("/{id:guid}", (Guid id, PhotosHandler h, CancellationToken ct) => h.DeleteAsync(id, ct))
             .WithName("DeletePhoto")
             .WithSummary("Delete an asset permanently, trashed or not: objects first, then the document.")

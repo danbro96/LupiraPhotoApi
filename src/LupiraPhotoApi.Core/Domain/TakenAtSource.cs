@@ -12,4 +12,7 @@ public enum TakenAtSource
     Album,
     Upload,
     FileTime,
+
+    /// <summary>Hand-set via <see cref="PhotoAsset.CaptureTimeOverride"/>; outranks every derived source.</summary>
+    Manual,
 }

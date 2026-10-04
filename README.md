@@ -21,7 +21,7 @@ owner-scoped. Bytes live in an S3-compatible object store (Garage); Postgres hol
   thumbnail (Magick.NET for stills incl. HEIC; ffmpeg poster frames for video), and geotags: client EXIF
   GPS → reverse-geocode label via lupira-geo-api; no GPS → timestamp match against the owner's location
   history via lupira-location-api's internal seam (~100 m quantized). A hand-set location outranks all of
-  these. Geotag lookups are soft — an asset becomes Ready without a label rather than failing. Failed
+  these; a fix the GPS sweep rejected is skipped. Geotag lookups are soft — an asset becomes Ready without a label rather than failing. Failed
   attempts retry with exponential backoff.
 - **Location corrections** — `PUT /photos/{id}/location` hand-sets coordinates (and optionally a label);
   `POST /photos/relocate` does it for every asset a selector matches (ids, or a time window narrowed by
@@ -29,6 +29,20 @@ owner-scoped. Bytes live in an S3-compatible object store (Garage); Postgres hol
   override is stored apart from the resolved geotag (`geotagSource: Manual`), so reprocessing re-applies
   it. `DELETE /photos/{id}/location` drops it and re-queues the asset to re-derive. Manual geotags show on
   the map but not in the measured-location density.
+- **Capture-time corrections** — `PUT /photos/{id}/taken-at` hand-sets the time; `POST /photos/retime` shifts
+  (`shiftBy`) or sets (`setTo`) it on every asset a selector matches (ids, or a time window narrowed by camera
+  model and device; `dryRun` lists before/after). The derived time is kept beneath the override
+  (`takenAtSource: Manual`), so an import re-run refreshes only that, and duplicate detection still matches a
+  copy on the file's own time. `DELETE /photos/{id}/taken-at` restores the derived time. A photo geotagged from
+  location history is re-queued on any time change, so its location follows the new time. For a whole camera,
+  the import map's `clock <camera> = utc | ±HH:MM | <IANA zone>` line reads its EXIF in that zone instead
+  (an EXIF offset still wins).
+- **GPS sweep** — `POST /photos/gps-sweep` checks Ready photos with exact times, per phone or imported camera:
+  a spike (over 1000 km/h to and from both neighbours within 6 h, which sit close to each other) and a repeat
+  (one coordinate on two or more days — a stale fix, or a home). It reports counts and samples; `apply` rejects
+  every spike plus the repeats listed in `rejectCoordinates`, re-queues them and returns their ids. Processing
+  skips a rejected fix on every run, so the photo falls back to location history, else no location; the asset
+  carries `gpsRejection` (coordinate and reason). `DELETE /photos/{id}/gps-rejection` undoes it.
 - **Query** — keyset-paged list (time window, bbox, kind, status, located, place, source album, trash)
   with presigned thumbnail URLs, id lookup, a GeoJSON map layer clustered server-side (a point per photo
   when the viewport is sparse or at street level, else per-cell counts on a Web Mercator grid three levels
@@ -45,8 +59,8 @@ owner-scoped. Bytes live in an S3-compatible object store (Garage); Postgres hol
 
 | Surface | Base path | Auth | Notes |
 |---|---|---|---|
-| REST (owner) | `/photos`, `/me` | OIDC JWT (`ApiPolicy`) | Declare/complete, list/lookup/map/density/stats/albums/places, get/update, set/clear location, relocate, trash/restore/empty-trash, delete, reprocess. |
-| MCP (agent) | `/mcp` | OIDC JWT (`ApiPolicy`) | Streamable HTTP. Reads: `list_photos`, `search_photos`, `photo_stats`; location corrections: `relocate_photos`, `clear_photo_location`. |
+| REST (owner) | `/photos`, `/me` | OIDC JWT (`ApiPolicy`) | Declare/complete, list/lookup/map/density/stats/albums/places, get/update, set/clear location, relocate, set/clear capture time, retime, GPS sweep/restore, trash/restore/empty-trash, delete, reprocess. |
+| MCP (agent) | `/mcp` | OIDC JWT (`ApiPolicy`) | Streamable HTTP. Reads: `list_photos`, `search_photos`, `photo_stats`; location corrections: `relocate_photos`, `clear_photo_location`; time corrections: `retime_photos`, `clear_photo_time`; GPS sweep: `sweep_photo_gps` (dry run unless `apply`), `restore_photo_gps`. |
 | Health | `/livez`, `/readyz` | none | Liveness / readiness (Postgres + object store reachable). |
 | OpenAPI | `/openapi/v1.json` | none | Generated at build time into `openapi/`. |
 | API reference | `/scalar/v1` | none | Scalar interactive UI. |

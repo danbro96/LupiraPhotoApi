@@ -175,7 +175,7 @@ public sealed partial class PhotoImporter(
     {
         var now = DateTimeOffset.UtcNow;
         foreach (var file in files)
-            file.Capture = CaptureTimeResolver.Resolve(Candidates(file, albumCoreStart: null), request.Zone, now, PrefersFilename(request, file));
+            file.Capture = CaptureTimeResolver.Resolve(Candidates(request, file, albumCoreStart: null), request.Zone, now, PrefersFilename(request, file));
 
         // Photos dated only approximately take their album's core start, which needs the exact-dated ones first.
         foreach (var album in files.Where(f => f.Album is not null).GroupBy(f => f.Album!))
@@ -185,7 +185,7 @@ public sealed partial class PhotoImporter(
                 .Select(f => DateOnly.FromDateTime(f.Capture!.TakenAt.UtcDateTime)));
             if (core is null) continue;
             foreach (var file in album.Where(f => CaptureTime.IsApproximate(f.Capture!.Source)))
-                file.Capture = CaptureTimeResolver.Resolve(Candidates(file, core.Value.From), request.Zone, now, PrefersFilename(request, file));
+                file.Capture = CaptureTimeResolver.Resolve(Candidates(request, file, core.Value.From), request.Zone, now, PrefersFilename(request, file));
         }
 
         foreach (var file in files)
@@ -198,10 +198,11 @@ public sealed partial class PhotoImporter(
         }
     }
 
-    private static CaptureCandidates Candidates(ImportFile file, DateOnly? albumCoreStart) => new()
+    private static CaptureCandidates Candidates(ImportRequest request, ImportFile file, DateOnly? albumCoreStart) => new()
     {
         ExifLocal = file.Metadata.TakenAtLocal,
         ExifOffset = file.Metadata.TakenAtOffset,
+        CameraClock = CameraEntry(request.Map.Clocks, file.Metadata.Camera),
         VideoUtc = file.Metadata.TakenAtUtc,
         FilenameLocal = file.FilenameLocal,
         FilenameIsTransfer = file.FilenameIsTransfer,
@@ -287,8 +288,7 @@ public sealed partial class PhotoImporter(
             var (person, via) = PersonFor(request, file, report);
             if (person is null && cameraName is not null && file.Sidecar?.FromSharedAlbum != true)
             {
-                if (request.Map.Cameras.TryGetValue(cameraName, out var cam)
-                    || (file.Metadata.Camera?.Model is { } model && request.Map.Cameras.TryGetValue(ImportMapParser.Collapse(model), out cam)))
+                if (CameraEntry(request.Map.Cameras, file.Metadata.Camera) is { } cam)
                     (person, via) = (cam, CapturedBySource.CameraOwner);
                 else
                     report.UnmappedCameras.Add(cameraName);
@@ -314,6 +314,13 @@ public sealed partial class PhotoImporter(
 
         foreach (var name in unresolved.Order(StringComparer.OrdinalIgnoreCase))
             report.Errors.Add($"unresolved person '{name}' — replace it with a contact id in the map file");
+    }
+
+    private static T? CameraEntry<T>(Dictionary<string, T> entries, CameraInfo? camera)
+        where T : class
+    {
+        if (DtoMapping.CameraName(camera) is { } name && entries.TryGetValue(ImportMapParser.Collapse(name), out var byName)) return byName;
+        return camera?.Model is { } model && entries.TryGetValue(ImportMapParser.Collapse(model), out var byModel) ? byModel : null;
     }
 
     /// <summary>The deepest folder below the album with a <c>person</c> entry — by relative path first, then by
@@ -378,7 +385,7 @@ public sealed partial class PhotoImporter(
         var takenAt = file.Capture!.TakenAt;
         return await session.Query<PhotoAsset>()
             .Where(a => a.PrincipalId == principalId
-                     && a.TakenAt == takenAt
+                     && (a.TakenAt == takenAt || a.CaptureTimeOverride!.DerivedTakenAt == takenAt)
                      && a.SizeBytes == file.SizeBytes
                      && a.ContentType == file.ContentType
                      && a.Status != AssetStatus.Duplicate

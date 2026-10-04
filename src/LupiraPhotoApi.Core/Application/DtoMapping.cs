@@ -19,6 +19,10 @@ internal static class DtoMapping
             Software = camera.Software,
         };
 
+    public static GpsRejectionDto? GpsRejection(GpsRejection? rejection) => rejection is null
+        ? null
+        : new GpsRejectionDto { Latitude = rejection.Latitude, Longitude = rejection.Longitude, Reason = rejection.Reason };
+
     /// <summary>"Sony G8341", without doubling a make the model already starts with ("Canon Canon EOS 650D").</summary>
     public static string? CameraName(CameraInfo? camera)
     {

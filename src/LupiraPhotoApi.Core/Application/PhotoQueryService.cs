@@ -193,6 +193,7 @@ public sealed class PhotoQueryService(IQuerySession session, PhotoPresigner pres
         LastError = asset.LastError,
         DuplicateOfId = asset.DuplicateOfId,
         Camera = DtoMapping.Camera(asset.Camera),
+        GpsRejection = DtoMapping.GpsRejection(asset.GpsRejection),
         TakenAtSource = asset.TakenAtSource,
         CapturedByContactId = asset.CapturedByContactId,
         CapturedBySource = asset.CapturedBySource,

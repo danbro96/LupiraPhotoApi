@@ -88,4 +88,31 @@ public class CaptureTimeResolverTests
         var d = Resolve(new CaptureCandidates { FileTimeUtc = mtime });
         Assert.Equal((TakenAtSource.FileTime, mtime), (d.Source, d.TakenAt));
     }
+
+    [Fact]
+    public void CameraClock_InUtc_ReadsExifAsUtc()
+    {
+        var d = Resolve(new CaptureCandidates { ExifLocal = new DateTime(2015, 7, 1, 10, 0, 0), CameraClock = TimeZoneInfo.Utc });
+        Assert.Equal(new DateTimeOffset(2015, 7, 1, 10, 0, 0, TimeSpan.Zero), d.TakenAt);
+    }
+
+    [Fact]
+    public void CameraClock_AtAFixedOffset_IgnoresSummerTime()
+    {
+        var winter = ImportMapParser.Parse("clock HTC Desire = +01:00").Clocks["HTC Desire"];
+        var d = Resolve(new CaptureCandidates { ExifLocal = new DateTime(2011, 7, 1, 10, 0, 0), CameraClock = winter });
+        Assert.Equal(new DateTimeOffset(2011, 7, 1, 9, 0, 0, TimeSpan.Zero), d.TakenAt);
+    }
+
+    [Fact]
+    public void ExifOffset_BeatsTheCameraClock()
+    {
+        var d = Resolve(new CaptureCandidates
+        {
+            ExifLocal = new DateTime(2019, 6, 7, 10, 0, 0),
+            ExifOffset = TimeSpan.FromHours(2),
+            CameraClock = TimeZoneInfo.Utc,
+        });
+        Assert.Equal(new DateTimeOffset(2019, 6, 7, 8, 0, 0, TimeSpan.Zero), d.TakenAt);
+    }
 }

@@ -49,6 +49,10 @@ public sealed class PhotoAsset
 
     public LocationOverride? LocationOverride { get; set; }
 
+    public CaptureTimeOverride? CaptureTimeOverride { get; set; }
+
+    public GpsRejection? GpsRejection { get; set; }
+
     public Guid? CapturedByContactId { get; set; }
 
     public CapturedBySource? CapturedBySource { get; set; }

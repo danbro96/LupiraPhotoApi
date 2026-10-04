@@ -43,6 +43,8 @@ public sealed class PhotoAssetDto
 
     public CameraDto? Camera { get; set; }
 
+    public GpsRejectionDto? GpsRejection { get; set; }
+
     public required TakenAtSource TakenAtSource { get; set; }
 
     public Guid? CapturedByContactId { get; set; }

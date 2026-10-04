@@ -79,6 +79,46 @@ public class ImportTests(PhotoApiTestFactory factory) : IntegrationTest(factory)
     }
 
     [Fact]
+    public async Task ARetime_SurvivesReRuns_AndTheFileStillFindsItsCopies()
+    {
+        var bytes = Jpeg(exifTaken: "2011:07:01 14:00:00", make: "HTC", model: "HTC Desire");
+        Write("2011-07-01 Midsommar/IMAG0001.jpg", bytes);
+        await ImportAsync(ImportSource.Handelser, map: string.Empty);
+        var imported = (await AssetsAsync()).Single();
+        var api = Factory.ApiClient(Email);
+        await WaitForStatusAsync(api, imported.Id, AssetStatus.Ready);
+
+        var retime = await api.PostAsJsonAsync("/photos/retime", new RetimePhotosRequest { Ids = [imported.Id], ShiftBy = TimeSpan.FromHours(-1) }, Json);
+        Assert.True(retime.IsSuccessStatusCode, await retime.Content.ReadAsStringAsync());
+        var manual = imported.TakenAt.AddHours(-1);
+
+        var rerun = await ImportAsync(ImportSource.Handelser, "clock HTC Desire = +01:00");
+
+        Assert.Equal((0, 1, 0), (rerun.Imported, rerun.AlreadyPresent, rerun.Duplicates));
+        var kept = (await AssetsAsync()).Single();
+        Assert.Equal((TakenAtSource.Manual, manual), (kept.TakenAtSource, kept.TakenAt));
+        var derived = new DateTimeOffset(2011, 7, 1, 13, 0, 0, TimeSpan.Zero);
+        Assert.Equal((derived, TakenAtSource.Exif), (kept.CaptureTimeOverride!.DerivedTakenAt, kept.CaptureTimeOverride.DerivedSource));
+
+        var phone = PhotoDeclare(bytes, mediaStoreId: "phone-1");
+        phone.TakenAt = derived;
+        Assert.Equal(AssetStatus.Duplicate, (await DeclareAsync(api, phone)).Status);
+    }
+
+    [Fact]
+    public async Task ClockLines_ReadACamerasExifInItsZone()
+    {
+        Write("2015-07-01 Sommar/a.jpg", Jpeg(exifTaken: "2015:07:01 10:00:00", make: "LGE", model: "Nexus 5"));
+        Write("2015-07-01 Sommar/b.jpg", Jpeg(exifTaken: "2015:07:01 10:00:00", make: "Sony", model: "G8341"));
+
+        await ImportAsync(ImportSource.Handelser, "clock Nexus 5 = utc");
+
+        var assets = await AssetsAsync();
+        Assert.Equal(new DateTimeOffset(2015, 7, 1, 10, 0, 0, TimeSpan.Zero), assets.Single(a => a.MediaStoreId.EndsWith("a.jpg", StringComparison.Ordinal)).TakenAt);
+        Assert.Equal(new DateTimeOffset(2015, 7, 1, 8, 0, 0, TimeSpan.Zero), assets.Single(a => a.MediaStoreId.EndsWith("b.jpg", StringComparison.Ordinal)).TakenAt);
+    }
+
+    [Fact]
     public async Task ACopyOfAPhoneBackup_DonatesItsAlbumAndPhotographer()
     {
         var bytes = Jpeg(exifTaken: "2017:10:04 12:00:00");

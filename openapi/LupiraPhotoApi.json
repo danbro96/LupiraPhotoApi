@@ -1271,6 +1271,327 @@
         ]
       }
     },
+    "/photos/{id}/taken-at": {
+      "put": {
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Hand-set the capture time; outranks every derived time and survives import re-runs.",
+        "operationId": "SetPhotoTakenAt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPhotoTakenAtRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoAssetDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Drop a hand-set capture time and restore the derived one (idempotent).",
+        "operationId": "ClearPhotoTakenAt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoAssetDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/photos/retime": {
+      "post": {
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Shift or set the capture time of every asset a selector matches (ids, or a time window narrowed by camera and device). dryRun previews before/after.",
+        "operationId": "RetimePhotos",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetimePhotosRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetimePhotosResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/photos/gps-sweep": {
+      "post": {
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Report impossible GPS fixes per camera: speed spikes and coordinates repeated across days. apply rejects the spikes and the listed coordinates, and re-queues them.",
+        "operationId": "SweepPhotoGps",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GpsSweepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GpsSweepResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/photos/{id}/gps-rejection": {
+      "delete": {
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Drop a GPS rejection and re-queue the asset so its fix is used again (idempotent).",
+        "operationId": "RestorePhotoGps",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoAssetDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/photos/trash": {
       "delete": {
         "tags": [
@@ -1520,6 +1841,224 @@
           "Manual"
         ]
       },
+      "GpsCoordinateDto": {
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "GpsRejectionDto": {
+        "required": [
+          "latitude",
+          "longitude",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/GpsRejectionReason"
+          }
+        },
+        "description": "A fix the GPS sweep rejected; processing skips it until restored."
+      },
+      "GpsRejectionReason": {
+        "enum": [
+          "Spike",
+          "Repeat"
+        ]
+      },
+      "GpsRepeatDto": {
+        "required": [
+          "latitude",
+          "longitude",
+          "camera",
+          "count",
+          "days",
+          "first",
+          "last"
+        ],
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "camera": {
+            "type": "string",
+            "description": "The phone's device id, else the EXIF camera name."
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "days": {
+            "type": "integer",
+            "description": "Distinct UTC days.",
+            "format": "int32"
+          },
+          "first": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "One coordinate one camera reported on several days."
+      },
+      "GpsSpikeDto": {
+        "required": [
+          "id",
+          "takenAt",
+          "latitude",
+          "longitude",
+          "camera",
+          "speedInKmh",
+          "speedOutKmh"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "takenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "camera": {
+            "type": "string",
+            "description": "The phone's device id, else the EXIF camera name."
+          },
+          "speedInKmh": {
+            "type": "number",
+            "format": "double"
+          },
+          "speedOutKmh": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "GpsSweepRequest": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "to": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "apply": {
+            "type": "boolean",
+            "description": "Reject and re-queue; without it the sweep only reports."
+          },
+          "rejectCoordinates": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GpsCoordinateDto"
+            },
+            "description": "Repeated coordinates to reject too (within ~1 m), as reported under repeats."
+          }
+        },
+        "description": "Finds impossible GPS fixes among Ready photos with exact capture times, per camera. Spikes are\n            rejected on apply; repeated coordinates only when listed in List&lt;GpsCoordinateDto&gt;? GpsSweepRequest.RejectCoordinates."
+      },
+      "GpsSweepResponse": {
+        "required": [
+          "scanned",
+          "spikeCount",
+          "spikes",
+          "repeatCount",
+          "repeats",
+          "rejected",
+          "rejectedIds"
+        ],
+        "type": "object",
+        "properties": {
+          "scanned": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "spikeCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "spikes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GpsSpikeDto"
+            }
+          },
+          "repeatCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "repeats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GpsRepeatDto"
+            },
+            "description": "Most days first."
+          },
+          "rejected": {
+            "type": "integer",
+            "description": "Assets rejected and re-queued; 0 unless applied.",
+            "format": "int32"
+          },
+          "rejectedIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The rejected assets, for a restore; at most 2000."
+          }
+        },
+        "description": "Counts over everything scanned; List&lt;GpsSpikeDto&gt; GpsSweepResponse.Spikes and List&lt;GpsRepeatDto&gt; GpsSweepResponse.Repeats are capped samples."
+      },
       "LookupPhotosRequest": {
         "required": [
           "ids"
@@ -1751,6 +2290,16 @@
               }
             ]
           },
+          "gpsRejection": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GpsRejectionDto"
+              }
+            ]
+          },
           "takenAtSource": {
             "$ref": "#/components/schemas/TakenAtSource"
           },
@@ -1940,6 +2489,16 @@
               },
               {
                 "$ref": "#/components/schemas/CameraDto"
+              }
+            ]
+          },
+          "gpsRejection": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GpsRejectionDto"
               }
             ]
           },
@@ -2369,6 +2928,111 @@
           }
         }
       },
+      "RetimedPhotoDto": {
+        "required": [
+          "id",
+          "before",
+          "after"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "before": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "after": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RetimePhotosRequest": {
+        "type": "object",
+        "properties": {
+          "shiftBy": {
+            "pattern": "^-?(\\d+\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Added to each current time, signed (`-01:00:00`, `1.00:00:00`)."
+          },
+          "setTo": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "One time for every match.",
+            "format": "date-time"
+          },
+          "ids": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "from": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "to": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "cameraModel": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The EXIF camera model, case-insensitive (`HTC Desire`)."
+          },
+          "deviceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The uploading device, or an import source (`import:handelser`)."
+          },
+          "dryRun": {
+            "type": "boolean",
+            "description": "Report the before/after times without changing anything."
+          }
+        },
+        "description": "Hand-sets the capture time of every asset the selector matches — e.g. one camera's photos in a window\n            its clock ran wrong. Give exactly one of TimeSpan? RetimePhotosRequest.ShiftBy or DateTimeOffset? RetimePhotosRequest.SetTo. Needs List&lt;Guid&gt;? RetimePhotosRequest.Ids\n            or both DateTimeOffset? RetimePhotosRequest.From and DateTimeOffset? RetimePhotosRequest.To; the other criteria narrow further. Trashed assets are never\n            matched, nor are duplicates in a window."
+      },
+      "RetimePhotosResponse": {
+        "required": [
+          "count",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RetimedPhotoDto"
+            }
+          }
+        }
+      },
       "SetPhotoLocationRequest": {
         "required": [
           "latitude",
@@ -2394,6 +3058,19 @@
         },
         "description": "A hand-set location; outranks the file's own GPS until cleared."
       },
+      "SetPhotoTakenAtRequest": {
+        "required": [
+          "takenAt"
+        ],
+        "type": "object",
+        "properties": {
+          "takenAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A hand-set capture time; outranks every derived time and survives import re-runs until cleared."
+      },
       "TakenAtSource": {
         "enum": [
           "Device",
@@ -2403,7 +3080,8 @@
           "Folder",
           "Album",
           "Upload",
-          "FileTime"
+          "FileTime",
+          "Manual"
         ],
         "description": "Where DateTimeOffset PhotoAsset.TakenAt came from. TakenAtSource.Device is first so documents\n            written before the field existed (phone backups) read as it."
       },

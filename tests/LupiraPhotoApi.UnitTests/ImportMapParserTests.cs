@@ -37,7 +37,26 @@ public class ImportMapParserTests
         Assert.Contains("2016-03-11 Texas Furry Fiesta 2016", map.PreferFilename);
     }
 
+    [Fact]
+    public void Parses_ClockLines()
+    {
+        var map = ImportMapParser.Parse("""
+            clock  Nexus 5          = utc
+            clock  HTC   Desire     = +01:00
+            clock  Canon EOS 5D     = -05:30
+            clock  SM-G930F         = Europe/Stockholm
+            """);
+
+        Assert.Empty(map.Errors);
+        Assert.Same(TimeZoneInfo.Utc, map.Clocks["nexus 5"]);
+        Assert.Equal(TimeSpan.FromHours(1), map.Clocks["HTC Desire"].GetUtcOffset(new DateTime(2011, 7, 1)));
+        Assert.Equal(new TimeSpan(-5, -30, 0), map.Clocks["Canon EOS 5D"].BaseUtcOffset);
+        Assert.Equal(TimeSpan.FromHours(2), map.Clocks["SM-G930F"].GetUtcOffset(new DateTime(2011, 7, 1)));
+    }
+
     [Theory]
+    [InlineData("clock Nexus 5 = Mars/Olympus")]
+    [InlineData("clock Nexus 5 = +1")]
     [InlineData("camera Sony")]
     [InlineData("gadget X = y")]
     [InlineData("album X = maybe")]

@@ -41,6 +41,8 @@ public sealed class PhotoProcessingService(
             var thumbKey = ObjectKeys.Thumb(asset.PrincipalId, asset.TakenAt, asset.Id);
             using (var thumbStream = new MemoryStream(thumb.WebpBytes))
                 await store.PutAsync(thumbKey, thumbStream, thumb.WebpBytes.Length, "image/webp", ct);
+            // The key follows TakenAt, so a retimed asset's old thumbnail would otherwise be orphaned.
+            if (asset.ThumbKey is { } oldThumbKey && oldThumbKey != thumbKey) await store.DeleteAsync(oldThumbKey, ct);
             asset.ThumbKey = thumbKey;
             asset.Width ??= thumb.SourceWidth;
             asset.Height ??= thumb.SourceHeight;
@@ -62,7 +64,8 @@ public sealed class PhotoProcessingService(
     }
 
     /// <summary>A hand-set location → file EXIF GPS → the declared hint (phone coordinates or an import folder)
-    /// → the owner's location history → none. A curated label beats reverse geocoding.</summary>
+    /// → the owner's location history → none. A curated label beats reverse geocoding. A rejected fix is skipped
+    /// wherever it turns up.</summary>
     private async Task GeotagAsync(PhotoAsset asset, MediaMetadata metadata, string authentikSub, CancellationToken ct)
     {
         if (asset.LocationOverride is { } manual)
@@ -75,11 +78,12 @@ public sealed class PhotoProcessingService(
         var hint = asset.PlaceHint ?? PlaceHint.LegacyDevice(asset);
         string? label = null;
 
-        if (metadata is { Latitude: { } fileLat, Longitude: { } fileLon })
+        if (metadata is { Latitude: { } fileLat, Longitude: { } fileLon } && !GpsSweepService.IsRejected(asset, fileLat, fileLon))
         {
             (asset.Latitude, asset.Longitude, asset.GeotagSource) = (fileLat, fileLon, GeotagSource.ExifGps);
         }
-        else if (hint is { Latitude: { } hintLat, Longitude: { } hintLon })
+        else if (hint is { Latitude: { } hintLat, Longitude: { } hintLon }
+                 && (hint.Source == PlaceHintSource.Folder || !GpsSweepService.IsRejected(asset, hintLat, hintLon)))
         {
             var source = hint.Source == PlaceHintSource.Folder ? GeotagSource.Folder : GeotagSource.ExifGps;
             (asset.Latitude, asset.Longitude, asset.GeotagSource) = (hintLat, hintLon, source);

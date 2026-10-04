@@ -21,7 +21,7 @@ public static class CaptureTimeResolver
             return null;
         }
 
-        var exif = Check(c.ExifLocal is { } el ? Localize(el, c.ExifOffset, zone) : null, "exif");
+        var exif = Check(c.ExifLocal is { } el ? Localize(el, c.ExifOffset, c.CameraClock ?? zone) : null, "exif");
         var video = Check(c.VideoUtc, "video");
         var filename = Check(c.FilenameLocal is { } fl ? Localize(fl, null, zone) : null, "filename");
         var captureName = c.FilenameIsTransfer ? null : filename;

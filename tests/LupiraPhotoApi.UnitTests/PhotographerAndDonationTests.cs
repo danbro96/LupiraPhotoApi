@@ -64,4 +64,22 @@ public class PhotographerAndDonationTests
         MetadataDonation.Apply(canonical, copy);
         Assert.Equal((TakenAtSource.Exif, 6), (canonical.TakenAtSource, canonical.TakenAt.Month));
     }
+
+    [Fact]
+    public void ExactDate_NeverReplacesAHandSetOne_OnlyTheDerivedTimeBeneath()
+    {
+        var canonical = Asset();
+        canonical.TakenAtSource = TakenAtSource.Upload;
+        canonical.TakenAt = new DateTimeOffset(2019, 12, 17, 0, 0, 0, TimeSpan.Zero);
+        var manual = new DateTimeOffset(2019, 6, 8, 9, 0, 0, TimeSpan.Zero);
+        ManualCaptureTime.Set(canonical, manual, DateTimeOffset.UtcNow);
+        var copy = Asset();
+        copy.TakenAtSource = TakenAtSource.Exif;
+        copy.TakenAt = new DateTimeOffset(2019, 6, 7, 10, 0, 0, TimeSpan.Zero);
+
+        MetadataDonation.Apply(canonical, copy);
+
+        Assert.Equal((TakenAtSource.Manual, manual), (canonical.TakenAtSource, canonical.TakenAt));
+        Assert.Equal((TakenAtSource.Exif, copy.TakenAt), (canonical.CaptureTimeOverride!.DerivedSource, canonical.CaptureTimeOverride.DerivedTakenAt));
+    }
 }

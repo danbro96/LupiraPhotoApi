@@ -173,6 +173,42 @@ public class GeotagSelectionTests
     }
 
     [Fact]
+    public async Task RejectedFileFix_FallsThroughToLocationHistory()
+    {
+        var asset = Asset();
+        asset.GpsRejection = new GpsRejection { Latitude = 55.390556, Longitude = 12.833056, Reason = GpsRejectionReason.Repeat, At = TakenAt };
+        await Service(reverseLabel: "Skanör med Falsterbo", historyHit: new LocationHistoryHit { Latitude = 59.30, Longitude = 18.10, Label = "Home" }, file: new MediaMetadata { Latitude = 55.390556, Longitude = 12.833056 })
+            .ProcessAsync(asset, "sub-1", CancellationToken.None);
+
+        Assert.Equal(GeotagSource.LocationHistory, asset.GeotagSource);
+        Assert.Equal((59.30, "Home"), (asset.Latitude!.Value, asset.PlaceLabel));
+    }
+
+    [Fact]
+    public async Task RejectedPhoneFix_WithoutHistory_EndsWithoutALocation()
+    {
+        var asset = Asset(59.9, 30.3);
+        asset.PlaceHint = new PlaceHint { Source = PlaceHintSource.Device, Latitude = 59.9, Longitude = 30.3 };
+        asset.GpsRejection = new GpsRejection { Latitude = 59.9, Longitude = 30.3, Reason = GpsRejectionReason.Spike, At = TakenAt };
+        await Service(reverseLabel: "Sankt Petersburg").ProcessAsync(asset, "sub-1", CancellationToken.None);
+
+        Assert.Equal(GeotagSource.None, asset.GeotagSource);
+        Assert.Null(asset.Latitude);
+        Assert.Null(asset.PlaceLabel);
+    }
+
+    [Fact]
+    public async Task ARejection_LeavesOtherFixesAlone()
+    {
+        var asset = Asset();
+        asset.GpsRejection = new GpsRejection { Latitude = 55.390556, Longitude = 12.833056, Reason = GpsRejectionReason.Repeat, At = TakenAt };
+        await Service(reverseLabel: "Stockholm", file: new MediaMetadata { Latitude = 59.33, Longitude = 18.07 })
+            .ProcessAsync(asset, "sub-1", CancellationToken.None);
+
+        Assert.Equal((GeotagSource.ExifGps, 59.33), (asset.GeotagSource, asset.Latitude!.Value));
+    }
+
+    [Fact]
     public async Task Camera_ComesFromTheFile()
     {
         var asset = Asset();

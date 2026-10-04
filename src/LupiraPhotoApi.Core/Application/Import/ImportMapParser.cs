@@ -7,6 +7,7 @@ namespace LupiraPhotoApi.Core.Application.Import;
 /// Parses the import map. One entry per line, <c>#</c> comments:
 /// <code>
 /// camera  Sony G8341        = me
+/// clock   Nexus 5           = utc                    (utc, ±HH:MM, or an IANA zone)
 /// person  Bilder - Simon    = Simon Weideskog        (a name, a contact id, me, or none)
 /// place   Ljungby           = @Skolgatan 18          (@entry, lat,lon, or a geocoder query)
 /// place   Kungshamra 47     = Kungshamra 47, Solna | Kungshamra 47 ~ @Kungshamra 64A 500m
@@ -51,6 +52,10 @@ public static partial class ImportMapParser
                 case "camera":
                     map.Cameras[key] = Person(value);
                     break;
+                case "clock":
+                    if (Clock(value) is { } clock) map.Clocks[key] = clock;
+                    else map.Errors.Add($"line {lineNo}: clock value must be utc, ±HH:MM or an IANA zone");
+                    break;
                 case "person":
                     map.People[key] = Person(value);
                     break;
@@ -86,6 +91,20 @@ public static partial class ImportMapParser
         if (value.Equals("none", StringComparison.OrdinalIgnoreCase)) return new PersonRef { Kind = PersonRefKind.None, Text = value };
         if (Guid.TryParse(value, out var id)) return new PersonRef { Kind = PersonRefKind.Contact, ContactId = id, Text = value };
         return new PersonRef { Kind = PersonRefKind.Unresolved, Text = value };
+    }
+
+    private static TimeZoneInfo? Clock(string value)
+    {
+        if (value.Equals("utc", StringComparison.OrdinalIgnoreCase)) return TimeZoneInfo.Utc;
+        if (OffsetPattern().Match(value) is { Success: true } m)
+        {
+            var offset = new TimeSpan(int.Parse(m.Groups["h"].Value, CultureInfo.InvariantCulture), int.Parse(m.Groups["m"].Value, CultureInfo.InvariantCulture), 0);
+            if (m.Groups["sign"].Value == "-") offset = -offset;
+            var name = $"UTC{value}";
+            return TimeZoneInfo.CreateCustomTimeZone(name, offset, name, name);
+        }
+
+        return TimeZoneInfo.TryFindSystemTimeZoneById(value, out var zone) ? zone : null;
     }
 
     private static PlaceRule? Place(string value)
@@ -139,4 +158,7 @@ public static partial class ImportMapParser
 
     [GeneratedRegex(@"^@(?<near>.+?)\s+(?<m>\d+(?:\.\d+)?)\s*m$")]
     private static partial Regex CheckPattern();
+
+    [GeneratedRegex(@"^(?<sign>[+-])(?<h>0\d|1[0-4]):(?<m>[0-5]\d)$")]
+    private static partial Regex OffsetPattern();
 }

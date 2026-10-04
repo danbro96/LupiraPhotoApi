@@ -38,6 +38,7 @@ public sealed class PhotoPresigner(IObjectStore store, IMemoryCache cache, IOpti
             LastError = asset.LastError,
             DuplicateOfId = asset.DuplicateOfId,
             Camera = DtoMapping.Camera(asset.Camera),
+            GpsRejection = DtoMapping.GpsRejection(asset.GpsRejection),
             TakenAtSource = asset.TakenAtSource,
             CapturedByContactId = asset.CapturedByContactId,
             CapturedBySource = asset.CapturedBySource,

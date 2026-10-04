@@ -9,11 +9,11 @@ using ModelContextProtocol.Server;
 namespace LupiraPhotoApi.Mcp;
 
 /// <summary>
-/// The agent's MCP surface over the caller's own library: reads plus hand-set location corrections, via the
-/// SAME Core services as the REST handlers. Thumbnail URLs in results are presigned and time-limited.
+/// The agent's MCP surface over the caller's own library: reads plus hand-set location and time corrections and the
+/// GPS sweep, via the SAME Core services as the REST handlers. Thumbnail URLs in results are presigned and time-limited.
 /// </summary>
 [McpServerToolType]
-public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoStatsService stats, PhotoCurationService curation)
+public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoStatsService stats, PhotoCurationService curation, GpsSweepService gpsSweep)
 {
     [McpServerTool(Name = "list_photos")]
     [Description("List the caller's photo/video assets in a time window (newest first), optionally filtered to a bbox or kind. Items carry presigned thumbnail URLs.")]
@@ -103,6 +103,72 @@ public sealed class PhotoTools(CurrentUser user, PhotoQueryService query, PhotoS
     {
         var pid = (await user.GetAsync(ct)).Id;
         var result = await curation.ClearLocationAsync(pid, id, ct);
+        return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());
+    }
+
+    [McpServerTool(Name = "retime_photos")]
+    [Description("Hand-set the capture time of every asset the selector matches — e.g. a camera whose clock ran in the wrong zone. Give exactly one of shiftBy or setTo. Select by ids, or by from+to narrowed by cameraModel and/or deviceId. The time outranks the file's and survives import re-runs; a photo placed from location history is re-queued to follow the new time. clear_photo_time undoes it per asset. Preview with dryRun=true first: it lists before/after.")]
+    public async Task<RetimePhotosResponse> RetimePhotos(
+        [Description("Signed shift added to each current time, as [-][d.]hh:mm:ss (e.g. -01:00:00).")] TimeSpan? shiftBy = null,
+        [Description("One ISO-8601 time for every match.")] DateTimeOffset? setTo = null,
+        [Description("Asset ids (max 2000).")] List<Guid>? ids = null,
+        [Description("Window start on the current time, ISO-8601 (required with to when no ids).")] DateTimeOffset? from = null,
+        [Description("Window end, ISO-8601.")] DateTimeOffset? to = null,
+        [Description("EXIF camera model, case-insensitive (e.g. HTC Desire).")] string? cameraModel = null,
+        [Description("Uploading device id, or import:<source> for an import.")] string? deviceId = null,
+        [Description("Report before/after without changing anything.")] bool dryRun = false,
+        CancellationToken ct = default)
+    {
+        var pid = (await user.GetAsync(ct)).Id;
+        var request = new RetimePhotosRequest
+        {
+            ShiftBy = shiftBy,
+            SetTo = setTo,
+            Ids = ids,
+            From = from,
+            To = to,
+            CameraModel = cameraModel,
+            DeviceId = deviceId,
+            DryRun = dryRun,
+        };
+        var result = await curation.RetimeAsync(pid, request, ct);
+        return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());
+    }
+
+    [McpServerTool(Name = "clear_photo_time")]
+    [Description("Drop an asset's hand-set capture time and restore the one derived from its file.")]
+    public async Task<PhotoAssetDto> ClearPhotoTime(
+        [Description("Asset id.")] Guid id,
+        CancellationToken ct = default)
+    {
+        var pid = (await user.GetAsync(ct)).Id;
+        var result = await curation.ClearTakenAtAsync(pid, id, ct);
+        return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());
+    }
+
+    [McpServerTool(Name = "sweep_photo_gps")]
+    [Description("Find impossible GPS fixes per camera among photos with exact times: spikes (>1000 km/h to and from both neighbours, which sit close to each other) and coordinates repeated on several days. Reports counts and capped samples. apply=true rejects every spike plus the repeats named in rejectCoordinates, re-queues them and returns their ids (rejectedIds); a rejected photo falls back to location history, else no location. Run after fixing clocks with retime_photos; restore_photo_gps undoes.")]
+    public async Task<GpsSweepResponse> SweepPhotoGps(
+        [Description("Window start, ISO-8601.")] DateTimeOffset? from = null,
+        [Description("Window end, ISO-8601.")] DateTimeOffset? to = null,
+        [Description("Reject and re-queue; default is a dry run.")] bool apply = false,
+        [Description("Repeated coordinates to reject too (within ~1 m), copied from the report's repeats.")] List<GpsCoordinateDto>? rejectCoordinates = null,
+        CancellationToken ct = default)
+    {
+        var pid = (await user.GetAsync(ct)).Id;
+        var request = new GpsSweepRequest { From = from, To = to, Apply = apply, RejectCoordinates = rejectCoordinates };
+        var result = await gpsSweep.SweepAsync(pid, request, ct);
+        return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());
+    }
+
+    [McpServerTool(Name = "restore_photo_gps")]
+    [Description("Drop the GPS rejection on these assets and re-queue them so their own fix is used again. Returns the ids that held a rejection.")]
+    public async Task<List<Guid>> RestorePhotoGps(
+        [Description("Asset ids (max 2000).")] List<Guid> ids,
+        CancellationToken ct = default)
+    {
+        var pid = (await user.GetAsync(ct)).Id;
+        var result = await gpsSweep.RestoreManyAsync(pid, ids, ct);
         return result.IsOk ? result.Value! : throw new McpException(result.Error ?? result.Status.ToString());
     }
 }

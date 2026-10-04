@@ -36,6 +36,7 @@ public static class CoreServiceCollectionExtensions
         services.AddScoped<PhotoTrashService>();
         services.AddScoped<PhotoStatsService>();
         services.AddScoped<PhotoCurationService>();
+        services.AddScoped<GpsSweepService>();
         services.AddScoped<PhotoAlbumService>();
         services.AddScoped<PhotoMaintenanceService>();
         services.AddScoped<LupiraPhotoApi.Core.Application.Import.PhotoImporter>();

@@ -68,6 +68,7 @@ public sealed class PhotoApiTestFactory : WebApplicationFactory<Program>
         S3.Objects.Clear();
         Geo.Label = "Testville";
         History.Hit = null;
+        History.HitAt = null;
         Places.Known.Clear();
     }
 

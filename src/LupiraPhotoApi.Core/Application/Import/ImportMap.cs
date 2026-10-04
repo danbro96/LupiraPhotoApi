@@ -5,6 +5,9 @@ public sealed class ImportMap
 {
     public Dictionary<string, PersonRef> Cameras { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>The zone a camera's EXIF wall clock ran on, keyed like <see cref="Cameras"/>.</summary>
+    public Dictionary<string, TimeZoneInfo> Clocks { get; } = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Keyed by a folder name or a root-relative folder path; the path wins.</summary>
     public Dictionary<string, PersonRef> People { get; } = new(StringComparer.OrdinalIgnoreCase);
 

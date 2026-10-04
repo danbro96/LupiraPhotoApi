@@ -7,6 +7,9 @@ public sealed class CaptureCandidates
 
     public TimeSpan? ExifOffset { get; set; }
 
+    /// <summary>The camera's clock from the import map; reads <see cref="ExifLocal"/> instead of the import zone.</summary>
+    public TimeZoneInfo? CameraClock { get; set; }
+
     public DateTimeOffset? VideoUtc { get; set; }
 
     public DateTime? FilenameLocal { get; set; }

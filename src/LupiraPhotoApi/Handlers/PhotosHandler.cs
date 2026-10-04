@@ -16,6 +16,7 @@ public sealed class PhotosHandler(
     PhotoDeleteService deleteService,
     PhotoTrashService trashService,
     PhotoCurationService curationService,
+    GpsSweepService gpsSweepService,
     PhotoAlbumService albumService)
 {
     public async Task<Results<Ok<DeclaredPhotoResponse>, ProblemHttpResult, UnauthorizedHttpResult>> DeclareAsync(
@@ -153,6 +154,41 @@ public sealed class PhotosHandler(
     {
         var u = await user.GetAsync(ct);
         return OpResultMap.OkProblem(await curationService.RelocateAsync(u.Id, request, ct));
+    }
+
+    public async Task<Results<Ok<PhotoAssetDto>, NotFound, ProblemHttpResult, UnauthorizedHttpResult>> SetTakenAtAsync(
+        Guid id, SetPhotoTakenAtRequest request, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return OpResultMap.OkNotFoundProblem(await curationService.SetTakenAtAsync(u.Id, id, request, ct));
+    }
+
+    public async Task<Results<Ok<PhotoAssetDto>, NotFound, ProblemHttpResult, UnauthorizedHttpResult>> ClearTakenAtAsync(
+        Guid id, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return OpResultMap.OkNotFoundProblem(await curationService.ClearTakenAtAsync(u.Id, id, ct));
+    }
+
+    public async Task<Results<Ok<RetimePhotosResponse>, ProblemHttpResult, UnauthorizedHttpResult>> RetimeAsync(
+        RetimePhotosRequest request, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return OpResultMap.OkProblem(await curationService.RetimeAsync(u.Id, request, ct));
+    }
+
+    public async Task<Results<Ok<GpsSweepResponse>, ProblemHttpResult, UnauthorizedHttpResult>> GpsSweepAsync(
+        GpsSweepRequest request, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return OpResultMap.OkProblem(await gpsSweepService.SweepAsync(u.Id, request, ct));
+    }
+
+    public async Task<Results<Ok<PhotoAssetDto>, NotFound, ProblemHttpResult, UnauthorizedHttpResult>> RestoreGpsAsync(
+        Guid id, CancellationToken ct)
+    {
+        var u = await user.GetAsync(ct);
+        return OpResultMap.OkNotFoundProblem(await gpsSweepService.RestoreAsync(u.Id, id, ct));
     }
 
     public async Task<Results<Ok<List<PhotoAlbumDto>>, UnauthorizedHttpResult>> AlbumsAsync(CancellationToken ct)

@@ -57,7 +57,7 @@ public sealed class PhotoDeclareService(IDocumentSession session, IObjectStore s
             if (import is null)
                 ApplyDevice(asset, req);
             else
-                ApplyImport(asset, import);
+                ApplyImport(asset, req.TakenAt, import);
             if (canonical is { } original && AssetLifecycle.TryMarkDuplicate(asset, original, DateTimeOffset.UtcNow))
                 await DonateAsync(asset, ct);
             session.Store(asset);
@@ -66,8 +66,7 @@ public sealed class PhotoDeclareService(IDocumentSession session, IObjectStore s
         else if (import is not null)
         {
             var hintBefore = (asset.PlaceHint?.Latitude, asset.PlaceHint?.Longitude, asset.PlaceHint?.Label);
-            asset.TakenAt = req.TakenAt;
-            ApplyImport(asset, import);
+            ApplyImport(asset, req.TakenAt, import);
             if (asset.Status == AssetStatus.Duplicate)
                 await DonateAsync(asset, ct);
             else if (hintBefore != (asset.PlaceHint?.Latitude, asset.PlaceHint?.Longitude, asset.PlaceHint?.Label))
@@ -102,13 +101,14 @@ public sealed class PhotoDeclareService(IDocumentSession session, IObjectStore s
 
     /// <summary>Byte-identical copies share capture time and byte count — caught before any transfer.
     /// The worker's Sha256 check is the exact backstop. Only an asset that actually holds bytes can be
-    /// a canonical: a Declared one may never be uploaded, and the janitor eventually expires it.</summary>
+    /// a canonical: a Declared one may never be uploaded, and the janitor eventually expires it. A retimed
+    /// canonical still matches on the time its file carries.</summary>
     private async Task<Guid?> FindCanonicalAsync(Guid principalId, Guid id, DeclarePhotoRequest req, CancellationToken ct)
     {
         var match = await session.Query<PhotoAsset>()
             .Where(a => a.PrincipalId == principalId
                      && a.Id != id
-                     && a.TakenAt == req.TakenAt
+                     && (a.TakenAt == req.TakenAt || a.CaptureTimeOverride!.DerivedTakenAt == req.TakenAt)
                      && a.SizeBytes == req.SizeBytes
                      && a.ContentType == req.ContentType
                      && a.Status != AssetStatus.Duplicate
@@ -131,9 +131,9 @@ public sealed class PhotoDeclareService(IDocumentSession session, IObjectStore s
             Photographer.Offer(asset, contactId, CapturedBySource.Uploader);
     }
 
-    private static void ApplyImport(PhotoAsset asset, ImportFacts import)
+    private static void ApplyImport(PhotoAsset asset, DateTimeOffset takenAt, ImportFacts import)
     {
-        asset.TakenAtSource = import.TakenAtSource;
+        ManualCaptureTime.Derive(asset, takenAt, import.TakenAtSource);
         asset.PlaceHint = import.PlaceHint;
         asset.SourceAlbum = import.SourceAlbum;
         asset.SourceAlbumKind = import.SourceAlbumKind;
