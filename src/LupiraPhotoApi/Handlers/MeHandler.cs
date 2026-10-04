@@ -1,4 +1,4 @@
-using LupiraPhotoApi.Auth;
+using Lupira.Identity.Marten.AspNetCore;
 using LupiraPhotoApi.Core.Dtos.Me;
 using Microsoft.AspNetCore.Http.HttpResults;
 

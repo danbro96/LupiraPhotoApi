@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using Lupira.Testing.Postgres;
 using LupiraPhotoApi.Core.Application;
 using LupiraPhotoApi.Core.Application.Map;
 using LupiraPhotoApi.Core.Domain;

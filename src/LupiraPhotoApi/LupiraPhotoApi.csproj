@@ -34,21 +34,21 @@
     <PackageReference Include="AWSSDK.S3" Version="4.0.102.3" />
     <!-- Apache-2.0 imaging with AutoOrient + WebP encode + HEIC decode (ImageSharp v4 gates Release builds on a license). -->
     <PackageReference Include="Magick.NET-Q8-x64" Version="14.16.0" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
-    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
-    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.9">
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.12">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
-    <PackageReference Include="Lupira.Auth.DevUser" Version="0.1.0" />
+    <PackageReference Include="Lupira.Auth.Jwt" Version="0.1.0" />
+    <PackageReference Include="Lupira.Clients.ServiceTokens" Version="0.1.0" />
     <PackageReference Include="Lupira.Hosting.Defaults" Version="0.1.0" />
     <PackageReference Include="Lupira.Hosting.Health" Version="0.1.0" />
     <PackageReference Include="Lupira.Hosting.LanEdge" Version="1.0.0" />
     <PackageReference Include="Lupira.Hosting.Observability" Version="0.1.1" />
+    <PackageReference Include="Lupira.Hosting.OpenApi" Version="0.1.0" />
     <PackageReference Include="Lupira.Hosting.Problems" Version="0.1.0" />
+    <PackageReference Include="Lupira.Identity.Marten.AspNetCore" Version="0.1.0" />
     <PackageReference Include="Lupira.Mcp" Version="0.1.0" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.16.5" />
   </ItemGroup>
 
 </Project>

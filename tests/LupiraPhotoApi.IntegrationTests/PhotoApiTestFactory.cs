@@ -1,12 +1,10 @@
+using Lupira.Testing.Postgres;
 using LupiraPhotoApi.Core.Application.Processing;
 using Marten;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Testcontainers.PostgreSql;
 
 namespace LupiraPhotoApi.IntegrationTests;
 
@@ -17,34 +15,32 @@ namespace LupiraPhotoApi.IntegrationTests;
 /// Ready is exercisable end-to-end; the geotag clients are swapped for controllable fakes and the
 /// video thumbnailer for a stub (photo thumbnails run the real Magick pipeline).
 /// </summary>
-public sealed class PhotoApiTestFactory : WebApplicationFactory<Program>
+public sealed class PhotoApiTestFactory : LupiraApiFactory<Program>
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
-    private bool _schemaApplied;
-
     public FakeS3Server S3 { get; } = new();
+
     public FakeReverseGeocoder Geo { get; } = new();
+
     public FakeLocationHistory History { get; } = new();
 
     public FakePlaceResolver Places { get; } = new();
 
-    public PhotoApiTestFactory() => _postgres.StartAsync().GetAwaiter().GetResult();
+    public IDocumentStore Store => Services.GetRequiredService<IDocumentStore>();
+
+    protected override string AuthentikSlug => "lupira-photo";
+
+    protected override void AddSettings(IDictionary<string, string?> settings)
+    {
+        settings["ObjectStorage:Endpoint"] = S3.BaseUrl;
+        settings["ObjectStorage:PublicEndpoint"] = S3.BaseUrl;
+        settings["ObjectStorage:AccessKey"] = "test";
+        settings["ObjectStorage:SecretKey"] = "test";
+        settings["Photos:ProcessingTickSeconds"] = "1";
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Development");
-        builder.ConfigureAppConfiguration(cfg =>
-            cfg.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:Postgres"] = _postgres.GetConnectionString(),
-                ["ObjectStorage:Endpoint"] = S3.BaseUrl,
-                ["ObjectStorage:PublicEndpoint"] = S3.BaseUrl,
-                ["ObjectStorage:AccessKey"] = "test",
-                ["ObjectStorage:SecretKey"] = "test",
-                ["Photos:ProcessingTickSeconds"] = "1",
-                // Dummy issuer for the RFC 9728 metadata document; never contacted (no token is ever validated).
-                ["Auth:Oidc:Authority"] = "https://auth.test/application/o/lupira-photo/",
-            }));
+        base.ConfigureWebHost(builder);
         builder.ConfigureTestServices(services =>
         {
             services.Replace(ServiceDescriptor.Singleton<IReverseGeocoder>(Geo));
@@ -55,15 +51,10 @@ public sealed class PhotoApiTestFactory : WebApplicationFactory<Program>
         });
     }
 
-    public IDocumentStore Store => Services.GetRequiredService<IDocumentStore>();
+    protected override Task ApplySchemaAsync() => Store.Storage.ApplyAllConfiguredChangesToDatabaseAsync();
 
-    public async Task ResetAsync()
+    protected override async Task ResetDataAsync()
     {
-        if (!_schemaApplied)
-        {
-            await Store.Storage.ApplyAllConfiguredChangesToDatabaseAsync();
-            _schemaApplied = true;
-        }
         await Store.Advanced.ResetAllData();
         S3.Objects.Clear();
         Geo.Label = "Testville";
@@ -72,22 +63,11 @@ public sealed class PhotoApiTestFactory : WebApplicationFactory<Program>
         Places.Known.Clear();
     }
 
-    public HttpClient ApiClient(string email)
-    {
-        var client = CreateClient();
-        client.DefaultRequestHeaders.Add("X-Dev-User", email);
-        return client;
-    }
-
-    /// <summary>A client with no auth header — for asserting unauthenticated requests are rejected.</summary>
-    public HttpClient AnonymousClient() => CreateClient();
-
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
         if (disposing)
         {
-            _postgres.DisposeAsync().AsTask().GetAwaiter().GetResult();
             S3.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
     }

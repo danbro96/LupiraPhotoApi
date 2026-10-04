@@ -10,7 +10,4 @@ public sealed class ServiceAuthOptions
     public string? ClientId { get; set; }
 
     public string? ClientSecret { get; set; }
-
-    public bool IsConfigured =>
-        !string.IsNullOrWhiteSpace(TokenUrl) && !string.IsNullOrWhiteSpace(ClientId) && !string.IsNullOrWhiteSpace(ClientSecret);
 }

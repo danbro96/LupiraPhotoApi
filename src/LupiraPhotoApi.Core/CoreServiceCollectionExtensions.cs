@@ -1,3 +1,4 @@
+using Lupira.Identity.Marten;
 using LupiraPhotoApi.Core.Application;
 using LupiraPhotoApi.Core.Application.Processing;
 using LupiraPhotoApi.Core.Data;
@@ -28,7 +29,7 @@ public static class CoreServiceCollectionExtensions
         }).UseLightweightSessions();
 
         services.AddMemoryCache();
-        services.AddScoped<PrincipalDirectory>();
+        services.AddLupiraPrincipalDirectory();
         services.AddScoped<PhotoDeclareService>();
         services.AddScoped<PhotoCompleteService>();
         services.AddScoped<PhotoQueryService>();

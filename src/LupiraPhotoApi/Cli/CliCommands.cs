@@ -1,3 +1,4 @@
+using Lupira.Identity.Marten;
 using LupiraPhotoApi.Core.Application;
 using LupiraPhotoApi.Core.Application.Import;
 

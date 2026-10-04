@@ -1,21 +1,14 @@
 using System.Text.Json;
 using LupiraPhotoApi.Core.Application.Import;
-using Microsoft.Extensions.Options;
 
 namespace LupiraPhotoApi.Clients;
 
 /// <summary>GeoApi gazetteer (<c>GET /places?q=</c>) first — contact addresses and saved places already live
 /// there — then the geocoder (<c>GET /geocode/forward</c>). Anything ambiguous is null, never a guess.</summary>
-public sealed class GeoPlaceClient(
-    HttpClient http,
-    ServiceTokenProvider tokens,
-    IOptions<GeoApiOptions> options,
-    ILogger<GeoPlaceClient> logger) : IPlaceResolver
+public sealed class GeoPlaceClient(HttpClient http, ILogger<GeoPlaceClient> logger) : IPlaceResolver
 {
     private const double SameSpotMeters = 1000;
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-
-    private readonly GeoApiOptions _opts = options.Value;
 
     public async Task<ResolvedPlace?> ResolveAsync(string query, CancellationToken ct = default)
     {
@@ -39,13 +32,7 @@ public sealed class GeoPlaceClient(
     {
         try
         {
-            using var req = new HttpRequestMessage(HttpMethod.Get, path);
-            if (tokens.IsConfigured)
-                req.Headers.TryAddWithoutValidation("Authorization", $"Bearer {await tokens.GetTokenAsync(_opts.Scope, ct)}");
-            else if (!string.IsNullOrWhiteSpace(_opts.DevUser))
-                req.Headers.TryAddWithoutValidation("X-Dev-User", _opts.DevUser);
-
-            using var resp = await http.SendAsync(req, ct);
+            using var resp = await http.GetAsync(path, ct);
             if (resp.IsSuccessStatusCode) return await resp.Content.ReadFromJsonAsync<T>(Json, ct);
             logger.LogWarning("Geo {Path} returned {Status}.", path, (int) resp.StatusCode);
             return default;

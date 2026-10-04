@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using ImageMagick;
-using LupiraPhotoApi.Core.Application;
+using Lupira.Identity.Marten;
+using Lupira.Testing.Postgres;
 using LupiraPhotoApi.Core.Application.Import;
 using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Dtos.Photos;

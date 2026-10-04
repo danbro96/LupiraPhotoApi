@@ -1,6 +1,6 @@
 using System.ComponentModel;
+using Lupira.Identity.Marten.AspNetCore;
 using Lupira.Mcp;
-using LupiraPhotoApi.Auth;
 using LupiraPhotoApi.Core.Application;
 using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Dtos.Photos;

@@ -1,5 +1,5 @@
+using Lupira.Identity.Marten;
 using LupiraPhotoApi.Core.Domain;
-using LupiraPhotoApi.Core.Domain.Identity;
 using Marten;
 using Weasel.Core;
 
@@ -16,8 +16,7 @@ public static class MartenRegistrations
         opts.DatabaseSchemaName = "photo";
         opts.UseSystemTextJsonForSerialization(EnumStorage.AsString);
 
-        // Unique sub: without it, concurrent first-sight logins fork one login into two principals.
-        opts.Schema.For<Principal>().Index(x => x.AuthentikSub, i => i.IsUnique = true).Index(x => x.Email);
+        opts.AddLupiraPrincipals();
 
         opts.Schema.For<PhotoAsset>()
             .Index(x => x.PrincipalId)

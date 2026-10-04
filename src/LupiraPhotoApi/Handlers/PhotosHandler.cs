@@ -1,5 +1,5 @@
 using Lupira.Hosting.Problems;
-using LupiraPhotoApi.Auth;
+using Lupira.Identity.Marten.AspNetCore;
 using LupiraPhotoApi.Core.Application;
 using LupiraPhotoApi.Core.Domain;
 using LupiraPhotoApi.Core.Dtos.Photos;

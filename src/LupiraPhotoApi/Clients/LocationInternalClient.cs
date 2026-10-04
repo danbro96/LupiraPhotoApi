@@ -1,38 +1,20 @@
 using System.Text.Json;
 using LupiraPhotoApi.Core.Application.Processing;
-using Microsoft.Extensions.Options;
 
 namespace LupiraPhotoApi.Clients;
 
 /// <summary>LupiraLocationApi <c>GET /internal/location/place-at</c> — the no-EXIF-GPS fallback.
 /// Returns ~100 m quantized coordinates (the API's synergy-safe cap). Null on no match or failure.</summary>
-public sealed class LocationInternalClient(
-    HttpClient http,
-    ServiceTokenProvider tokens,
-    IOptions<LocationApiOptions> options,
-    ILogger<LocationInternalClient> logger) : ILocationHistoryClient
+public sealed class LocationInternalClient(HttpClient http, ILogger<LocationInternalClient> logger) : ILocationHistoryClient
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-
-    private readonly LocationApiOptions _opts = options.Value;
 
     public async Task<LocationHistoryHit?> PlaceAtAsync(string authentikSub, DateTimeOffset ts, CancellationToken ct = default)
     {
         try
         {
             var query = $"internal/location/place-at?sub={Uri.EscapeDataString(authentikSub)}&ts={Uri.EscapeDataString(ts.UtcDateTime.ToString("O"))}";
-            using var req = new HttpRequestMessage(HttpMethod.Get, query);
-            if (tokens.IsConfigured)
-            {
-                req.Headers.TryAddWithoutValidation("Authorization", $"Bearer {await tokens.GetTokenAsync(_opts.Scope, ct)}");
-            }
-            else if (!string.IsNullOrWhiteSpace(_opts.DevUser))
-            {
-                req.Headers.TryAddWithoutValidation("X-Dev-User", _opts.DevUser);
-                req.Headers.TryAddWithoutValidation("X-Dev-Scopes", "internal:read");
-            }
-
-            using var resp = await http.SendAsync(req, ct);
+            using var resp = await http.GetAsync(query, ct);
             if (!resp.IsSuccessStatusCode)
             {
                 logger.LogWarning("Location place-at returned {Status} for ts {Ts}.", (int) resp.StatusCode, ts);
